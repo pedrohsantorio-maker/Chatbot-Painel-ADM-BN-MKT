@@ -29,7 +29,7 @@ export default function AgeGatePage() {
               <Link href="/denied">Não sou maior de 18</Link>
             </Button>
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex-1 h-14 text-base">
-              <Link href="/welcome">Sim, sou maior de 18😈</Link>
+              <Link href="/welcome">Sim, sou maior de 18</Link>
             </Button>
           </CardContent>
         </Card>
