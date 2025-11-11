@@ -14,7 +14,7 @@ export default function WelcomePage() {
       <div className="relative z-10 flex flex-col items-center text-center">
         <Card className="w-full max-w-md text-center bg-black border-none shadow-2xl backdrop-blur-sm">
           <CardHeader>
-            <CardDescription className="text-lg text-muted-foreground">
+            <CardDescription className="text-lg text-white font-bold">
               Prepare-se para uma conversa especial.
             </CardDescription>
           </CardHeader>
