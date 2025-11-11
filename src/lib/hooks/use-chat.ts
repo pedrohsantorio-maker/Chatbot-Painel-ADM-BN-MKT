@@ -30,13 +30,14 @@ const formatAudioDuration = (file: File, callback: (duration: string) => void) =
         const seconds = Math.floor(audio.duration % 60);
         callback(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     };
-}
+};
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [stage, setStage] = useState<ConversationStage>('start');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
   const initialMessageSent = useRef(false);
   
@@ -47,6 +48,10 @@ export function useChat() {
       const updatedPrev = prev.map(m => ({ ...m, suggestions: [] }));
       return [...updatedPrev, newMessage];
     });
+    if (message.sender === 'user') {
+      setIsSending(true);
+      setTimeout(() => setIsSending(false), 1000); // Debounce
+    }
     return newMessage;
   };
   
@@ -214,5 +219,5 @@ export function useChat() {
   };
 
 
-  return { messages, isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage };
+  return { messages, isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
 }

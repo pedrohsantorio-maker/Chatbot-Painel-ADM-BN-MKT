@@ -2,25 +2,25 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { Mic, Paperclip, Send, Square, Trash2 } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
 type ChatInputProps = {
+  text: string;
+  setText: (text: string) => void;
   onSendMessage: (text: string) => void;
   onSendMedia: (file: File, type: 'audio' | 'image' | 'video') => void;
+  isSending: boolean;
 };
 
-export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps) {
-  const [text, setText] = useState('');
+export default function ChatInput({ text, setText, onSendMessage, onSendMedia, isSending }: ChatInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -36,8 +36,6 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
     if (text.trim() && !isSending) {
       onSendMessage(text.trim());
       setText('');
-      setIsSending(true);
-      setTimeout(() => setIsSending(false), 1000); // Debounce
     }
   };
 
@@ -165,11 +163,11 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
               onChange={handleFileChange}
             />
             {text.trim() ? (
-              <Button type="submit" size="icon" disabled={isSending} className="bg-foreground hover:bg-foreground/90 rounded-full h-12 w-12 flex-shrink-0">
-                <Send className="h-5 w-5 text-background" />
+              <Button type="submit" size="icon" disabled={isSending} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-12 w-12 flex-shrink-0">
+                <Send className="h-5 w-5" />
               </Button>
             ) : (
-              <Button type="button" size="icon" onClick={startRecording} className="bg-primary hover:bg-primary/90 rounded-full h-12 w-12 flex-shrink-0">
+              <Button type="button" size="icon" onClick={startRecording} className="bg-foreground text-background hover:bg-foreground/90 rounded-full h-12 w-12 flex-shrink-0">
                 <Mic className="h-5 w-5" />
               </Button>
             )}
