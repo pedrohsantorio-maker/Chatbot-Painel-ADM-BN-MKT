@@ -12,13 +12,20 @@ export default function ChatView() {
   const [text, setText] = useState('');
 
   const handleSendMessage = (message: string) => {
-    sendMessage(message);
-    setText('');
+    if (message.trim()) {
+      sendMessage(message.trim());
+      setText('');
+    }
   };
 
   const handleSelectReply = (reply: string) => {
-    setText(reply);
-  }
+    // Check for the free text hint, which shouldn't be sent
+    if (reply === '(Livre digitação)') {
+      return;
+    }
+    // Automatically send the reply
+    handleSendMessage(reply);
+  };
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -27,15 +34,15 @@ export default function ChatView() {
         <div className="flex-1 overflow-y-auto">
           <MessageList messages={messages} isTyping={isTyping} />
         </div>
-        <div className="p-3 border-t bg-card">
-          <SuggestedReplies suggestions={suggestions} onSelectReply={handleSelectReply} />
-          <ChatInput 
-            text={text}
-            setText={setText}
-            onSendMessage={handleSendMessage} 
-            onSendMedia={sendMediaMessage}
-            isSending={isSending}
-          />
+        <div className="px-3 md:px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+1rem)] bg-card border-t">
+            <SuggestedReplies suggestions={suggestions} onSelectReply={handleSelectReply} />
+            <ChatInput 
+              text={text}
+              setText={setText}
+              onSendMessage={handleSendMessage} 
+              onSendMedia={sendMediaMessage}
+              isSending={isSending}
+            />
         </div>
       </div>
     </div>

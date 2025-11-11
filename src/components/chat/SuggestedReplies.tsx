@@ -27,22 +27,20 @@ export default function SuggestedReplies({
     >
       {suggestions.map((reply) => {
         const isFreeTextHint = reply === '(Livre digitação)';
-        if (isFreeTextHint) {
-          return (
-            <div key={reply} className="text-center w-full">
-              <span className="text-sm font-bold text-foreground bg-input px-3 py-1 rounded-md">
-                {reply}
-              </span>
-            </div>
-          );
-        }
+        
         return (
           <Button
             key={reply}
-            variant="outline"
+            variant={isFreeTextHint ? "ghost" : "outline"}
             size="sm"
-            className="rounded-full bg-background/50 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/10"
+            className={cn(
+              "rounded-full transition-transform duration-150 active:scale-95",
+              isFreeTextHint 
+                ? "text-sm font-bold text-foreground bg-input px-3 py-1 cursor-default w-full pointer-events-none"
+                : "bg-background/50 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/10"
+            )}
             onClick={() => onSelectReply(reply)}
+            disabled={isFreeTextHint}
           >
             {reply}
           </Button>
