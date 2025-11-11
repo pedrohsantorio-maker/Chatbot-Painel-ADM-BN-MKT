@@ -18,7 +18,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
-    setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
+    if (typeof window !== 'undefined') {
+        setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
+    }
   }, [message.timestamp]);
 
 
@@ -62,7 +64,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             'rounded-3xl px-5 py-3 shadow-md',
             isUser
                 ? 'bg-primary text-primary-foreground rounded-br-lg self-end'
-                : 'bg-card text-card-foreground rounded-bl-lg self-start'
+                : 'bg-accent/50 text-accent-foreground rounded-bl-lg self-start'
             )}
         >
             <div className="break-words">{renderContent()}</div>
