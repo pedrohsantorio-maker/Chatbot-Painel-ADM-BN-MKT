@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 
 export default function WelcomePage() {
   return (
@@ -15,9 +14,6 @@ export default function WelcomePage() {
       <div className="relative z-10 flex flex-col items-center text-center">
         <Card className="w-full max-w-md text-center bg-black border-none shadow-2xl backdrop-blur-sm">
           <CardHeader>
-            <div className="flex justify-center items-center mb-4">
-              <Sparkles className="w-12 h-12 text-primary" />
-            </div>
             <CardDescription className="text-lg text-muted-foreground">
               Prepare-se para uma conversa especial.
             </CardDescription>
