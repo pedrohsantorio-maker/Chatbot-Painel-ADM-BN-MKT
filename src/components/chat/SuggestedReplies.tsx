@@ -30,7 +30,7 @@ export default function SuggestedReplies({
         if (isFreeTextHint) {
           return (
             <div key={reply} className="text-center w-full">
-              <span className="text-sm text-primary font-medium">
+              <span className="text-sm font-bold text-foreground bg-input px-3 py-1 rounded-md">
                 {reply}
               </span>
             </div>
