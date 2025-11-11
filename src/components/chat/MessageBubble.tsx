@@ -1,10 +1,12 @@
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import AudioPlayer from './AudioPlayer';
 import { Button } from '../ui/button';
-import { Link2 } from 'lucide-react';
+import { Link2, MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
+import { Avatar, AvatarFallback } from '../ui/avatar';
 
 type MessageBubbleProps = {
   message: Message;
@@ -40,6 +42,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     }
   };
 
+  const timeAgo = formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR });
+
   return (
     <div
       className={cn(
@@ -47,17 +51,26 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
-      <div
-        className={cn(
-          'max-w-md rounded-xl px-4 py-3 shadow',
-          isUser
-            ? 'bg-primary text-primary-foreground rounded-br-none'
-            : 'bg-card text-card-foreground rounded-bl-none'
-        )}
-      >
-        <div className="break-words">{renderContent()}</div>
-        <p className={cn('text-xs mt-2', isUser ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
-          {format(message.timestamp, 'HH:mm')}
+      {!isUser && (
+        <Avatar className="h-8 w-8 bg-muted">
+            <AvatarFallback>
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground"/>
+            </AvatarFallback>
+        </Avatar>
+      )}
+      <div className="flex flex-col gap-1">
+        <div
+            className={cn(
+            'max-w-md rounded-3xl px-5 py-3 shadow-md',
+            isUser
+                ? 'bg-foreground text-background rounded-br-lg'
+                : 'bg-primary text-primary-foreground rounded-bl-lg'
+            )}
+        >
+            <div className="break-words">{renderContent()}</div>
+        </div>
+        <p className={cn('text-xs', isUser ? 'text-right' : 'text-left', 'text-muted-foreground')}>
+            {timeAgo}
         </p>
       </div>
     </div>

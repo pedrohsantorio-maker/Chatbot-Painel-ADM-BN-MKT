@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Mic, Paperclip, Send, Square, Trash2 } from 'lucide-react';
 import React, { useState, useRef, useEffect } from 'react';
-import { useToast } from '../ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 type ChatInputProps = {
   onSendMessage: (text: string) => void;
@@ -121,7 +121,7 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
   };
 
   return (
-    <div className="p-3 border-t bg-card">
+    <div className="p-3 border-t bg-card sticky bottom-0">
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         {isRecording || audioBlob ? (
           <div className="flex w-full items-center gap-2">
@@ -129,7 +129,7 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
                 <>
                     <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={discardRecording}><Trash2 /></Button>
                     <div className="flex-grow text-center text-sm font-mono">{formatTime(recordingTime)}</div>
-                    <Button type="button" size="icon" onClick={sendAudio} className="bg-primary hover:bg-primary/90 rounded-full"><Send /></Button>
+                    <Button type="button" size="icon" onClick={sendAudio} className="bg-primary hover:bg-primary/90 rounded-full flex-shrink-0"><Send /></Button>
                 </>
             ) : (
                 <>
@@ -140,22 +140,24 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
           </div>
         ) : (
           <>
-            <Input
-              type="text"
-              placeholder="Digite uma mensagem..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="flex-grow bg-white dark:bg-slate-800"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
+            <div className="relative flex-grow">
+              <Input
+                type="text"
+                placeholder="Digite uma mensagem..."
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="bg-input rounded-full pl-4 pr-12 h-12"
+              />
+               <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="rounded-full absolute right-2 top-1/2 -translate-y-1/2"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </div>
             <input
               type="file"
               ref={fileInputRef}
@@ -164,11 +166,11 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
               onChange={handleFileChange}
             />
             {text.trim() ? (
-              <Button type="submit" size="icon" disabled={isSending} className="bg-primary hover:bg-primary/90 rounded-full">
-                <Send className="h-5 w-5" />
+              <Button type="submit" size="icon" disabled={isSending} className="bg-foreground hover:bg-foreground/90 rounded-full h-12 w-12 flex-shrink-0">
+                <Send className="h-5 w-5 text-background" />
               </Button>
             ) : (
-              <Button type="button" size="icon" onClick={startRecording} className="bg-primary hover:bg-primary/90 rounded-full">
+              <Button type="button" size="icon" onClick={startRecording} className="bg-primary hover:bg-primary/90 rounded-full h-12 w-12 flex-shrink-0">
                 <Mic className="h-5 w-5" />
               </Button>
             )}
