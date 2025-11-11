@@ -67,7 +67,7 @@ export function useChat() {
     });
   };
 
-  const botMediaReply = (type: 'image' | 'audio', mediaUrl: string, text?: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
+  const botMediaReply = (type: 'image' | 'audio' | 'link', mediaUrl: string, text?: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
     setIsTyping(true);
     setSuggestions([]);
     return new Promise<Message>(resolve => {
@@ -76,7 +76,7 @@ export function useChat() {
           if (type === 'audio') {
               mediaMeta = { duration: '0:05' } // Placeholder duration
           }
-          const msg = addMessage({ sender: 'bot', type, mediaUrl, text, mediaMeta, suggestions: options.suggestions });
+          const msg = addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions });
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -159,11 +159,8 @@ export function useChat() {
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
             setIsTyping(true);
-            setTimeout(() => {
-                addMessage({ sender: 'bot', type: 'link', text: 'https://firebase.google.com/' }); // Placeholder Link
-                setIsTyping(false);
-                botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, { newStage: 'end' });
-            }, 2000);
+            await botMediaReply('link', 'https://firebase.google.com/', undefined, 2000); // Placeholder Link
+            await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, { newStage: 'end' });
         } else {
             botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", 1000, { newStage: 'end' });
         }
@@ -216,3 +213,5 @@ export function useChat() {
 
   return { messages, isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage };
 }
+
+    
