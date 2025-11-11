@@ -13,8 +13,10 @@ export default function ChatView() {
     <div className="flex h-screen flex-col bg-background">
       <div className="w-full max-w-3xl mx-auto flex h-full flex-col">
         <ChatHeader />
-        <MessageList messages={messages} isTyping={isTyping} />
-        <div className="p-3 border-t bg-card sticky bottom-0">
+        <div className="flex-1 overflow-y-auto">
+          <MessageList messages={messages} isTyping={isTyping} />
+        </div>
+        <div className="p-3 border-t bg-card">
           <SuggestedReplies suggestions={suggestions} onSelectReply={sendMessage} />
           <ChatInput onSendMessage={sendMessage} onSendMedia={sendMediaMessage} />
         </div>

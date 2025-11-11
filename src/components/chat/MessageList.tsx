@@ -1,7 +1,6 @@
 'use client';
 
 import type { Message } from '@/lib/types';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { useEffect, useRef } from 'react';
@@ -24,13 +23,13 @@ export default function MessageList({ messages, isTyping }: MessageListProps) {
   }, [messages, isTyping]);
 
   return (
-    <ScrollArea className="flex-grow p-4" viewportRef={scrollViewport}>
+    <div className="flex-grow p-4" ref={scrollViewport}>
       <div className="flex flex-col gap-4">
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
         {isTyping && <TypingIndicator />}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
