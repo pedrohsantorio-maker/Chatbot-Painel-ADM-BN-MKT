@@ -70,7 +70,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             className={cn(
             'rounded-3xl px-5 py-3 shadow-md',
             isUser
-                ? 'bg-primary text-primary-foreground rounded-br-lg self-end'
+                ? 'bg-foreground text-background rounded-br-lg self-end'
                 : 'bg-accent text-accent-foreground rounded-bl-lg self-start'
             )}
         >
