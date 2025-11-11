@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -38,6 +38,7 @@ export function useChat() {
   const [stage, setStage] = useState<ConversationStage>('start');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const { toast } = useToast();
+  const initialMessageSent = useRef(false);
   
   const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
     const newMessage = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
@@ -91,7 +92,8 @@ export function useChat() {
 
 
   useEffect(() => {
-    if (stage === 'start') {
+    if (stage === 'start' && !initialMessageSent.current) {
+        initialMessageSent.current = true;
         botReply("Oi, gostoso, como você tá?❤", 500, {
             newStage: 'awaiting_first_response',
             suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
