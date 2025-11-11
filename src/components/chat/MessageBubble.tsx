@@ -1,3 +1,4 @@
+'use client';
 import type { Message } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNowStrict } from 'date-fns';
@@ -6,6 +7,7 @@ import AudioPlayer from './AudioPlayer';
 import { Button } from '../ui/button';
 import { Link2 } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 type MessageBubbleProps = {
   message: Message;
@@ -13,6 +15,12 @@ type MessageBubbleProps = {
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
+  const [timeAgo, setTimeAgo] = useState('');
+
+  useEffect(() => {
+    setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
+  }, [message.timestamp]);
+
 
   const renderContent = () => {
     switch (message.type) {
@@ -37,11 +45,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             </div>
         ) : null;
       default:
-        return <p className="leading-relaxed">{message.text}</p>;
+        return <p className="leading-relaxed break-words">{message.text}</p>;
     }
   };
-
-  const timeAgo = formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR });
 
   return (
     <div
@@ -50,20 +56,22 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         isUser ? 'justify-end' : 'justify-start'
       )}
     >
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col gap-1 w-full max-w-md">
         <div
             className={cn(
-            'max-w-md rounded-3xl px-5 py-3 shadow-md',
+            'rounded-3xl px-5 py-3 shadow-md',
             isUser
-                ? 'bg-foreground text-background rounded-br-lg self-end'
-                : 'bg-primary text-primary-foreground rounded-bl-lg self-start'
+                ? 'bg-primary text-primary-foreground rounded-br-lg self-end'
+                : 'bg-card text-card-foreground rounded-bl-lg self-start'
             )}
         >
             <div className="break-words">{renderContent()}</div>
         </div>
-        <p className={cn('text-xs', isUser ? 'text-right' : 'text-left', 'text-muted-foreground')}>
-            {timeAgo}
-        </p>
+        {timeAgo && (
+          <p className={cn('text-xs', isUser ? 'text-right' : 'text-left', 'text-muted-foreground')}>
+              {timeAgo}
+          </p>
+        )}
       </div>
     </div>
   );
