@@ -25,10 +25,10 @@ export default function AgeGatePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild variant="secondary" size="lg" className="bg-secondary/50 hover:bg-secondary/70 text-secondary-foreground font-bold border-none flex-1">
+            <Button asChild variant="secondary" size="lg" className="bg-secondary/50 hover:bg-secondary/70 text-secondary-foreground font-bold border-none flex-1 h-14 text-base">
               <Link href="/denied">Não sou maior de 18</Link>
             </Button>
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex-1">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex-1 h-14 text-base">
               <Link href="/welcome">Sim, sou maior de 18😈</Link>
             </Button>
           </CardContent>
