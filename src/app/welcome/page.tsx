@@ -12,14 +12,14 @@ export default function WelcomePage() {
        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-purple-600/20 rounded-full blur-[150px] opacity-40 animate-pulse [animation-delay:2s]"></div>
       
       <div className="relative z-10 flex flex-col items-center text-center">
-        <Card className="w-full max-w-md text-center bg-black border-none shadow-2xl backdrop-blur-sm">
-          <CardHeader>
-            <CardDescription className="text-lg text-white font-bold">
-              Prepare-se para uma conversa especial.
+        <Card className="w-full max-w-md text-center bg-black border-none shadow-2xl backdrop-blur-sm p-8 rounded-2xl">
+          <CardHeader className="p-0 mb-6">
+            <CardDescription className="text-xl text-white font-bold">
+              Prepare-se para uma conversa especial😈
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild size="lg" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg">
+          <CardContent className="p-0">
+            <Button asChild size="lg" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-full shadow-lg shadow-primary/50 transition-all duration-300 hover:scale-105">
               <Link href="/chat">Falar com Gi</Link>
             </Button>
           </CardContent>
