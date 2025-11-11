@@ -24,11 +24,11 @@ export default function AgeGatePage() {
               Você deve ter 18 anos ou mais para continuar.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button asChild variant="secondary" size="lg" className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold border-none w-full sm:w-auto flex-1">
+          <CardContent className="flex justify-center gap-4">
+            <Button asChild variant="secondary" size="lg" className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold border-none flex-1">
               <Link href="/denied">Não sou maior de 18</Link>
             </Button>
-            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold w-full sm:w-auto flex-1">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex-1">
               <Link href="/welcome">Sim, sou maior de 18😈</Link>
             </Button>
           </CardContent>
