@@ -15,7 +15,7 @@ export default function AgeGatePage() {
         <h1 className="text-4xl md:text-5xl font-bold text-primary mb-12">
           Pronto para receber o melhor conteúdo?
         </h1>
-        <Card className="w-full max-w-md text-center bg-black/50 border-primary/50 shadow-2xl backdrop-blur-sm">
+        <Card className="w-full max-w-md text-center bg-black border-none shadow-2xl backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-2xl font-bold font-headline text-white">
               Confirme sua idade
