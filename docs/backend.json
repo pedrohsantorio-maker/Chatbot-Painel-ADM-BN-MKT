@@ -1,0 +1,361 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the chatbot.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "name": {
+          "type": "string",
+          "description": "User's name."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of when the user was created.",
+          "format": "date-time"
+        },
+        "utm": {
+          "type": "string",
+          "description": "UTM parameters associated with the user's acquisition."
+        },
+        "origin": {
+          "type": "string",
+          "description": "Origin of the user."
+        },
+        "city": {
+          "type": "string",
+          "description": "User's city."
+        },
+        "device": {
+          "type": "string",
+          "description": "User's device type (e.g., mobile, desktop)."
+        }
+      },
+      "required": [
+        "id",
+        "createdAt"
+      ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a message exchanged in the chat.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chat message."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N ChatMessage)"
+        },
+        "sender": {
+          "type": "string",
+          "description": "Indicates who sent the message (user or bot)."
+        },
+        "text": {
+          "type": "string",
+          "description": "Text content of the message."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of message (text, audio, image, video, link)."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Path to the media file in Firebase Storage (if applicable)."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the message was sent.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "sender",
+        "type",
+        "timestamp"
+      ]
+    },
+    "ChatbotFlow": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatbotFlow",
+      "type": "object",
+      "description": "Represents the configured flow of the chatbot conversation.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chatbot flow."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the chatbot flow."
+        },
+        "steps": {
+          "type": "array",
+          "description": "Array of chatbot flow steps.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "ChatbotFlowStep": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatbotFlowStep",
+      "type": "object",
+      "description": "Represents a single step in the chatbot flow.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the chatbot flow step."
+        },
+        "chatbotFlowId": {
+          "type": "string",
+          "description": "Reference to ChatbotFlow. (Relationship: ChatbotFlow 1:N ChatbotFlowStep)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Message content for this step."
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of content for this step (text, audio, image, video)."
+        },
+        "storagePath": {
+          "type": "string",
+          "description": "Path to the media file in Firebase Storage (if applicable)."
+        },
+        "action": {
+          "type": "string",
+          "description": "Action to perform at this step (e.g., wait for user input, redirect to payment)."
+        }
+      },
+      "required": [
+        "id",
+        "chatbotFlowId"
+      ]
+    },
+    "AdminLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminLog",
+      "type": "object",
+      "description": "Represents a log entry for admin panel activity.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the admin log entry."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "Identifier of the admin user who performed the action."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the action was performed.",
+          "format": "date-time"
+        },
+        "action": {
+          "type": "string",
+          "description": "Description of the action performed (e.g., edited message, deleted user)."
+        },
+        "details": {
+          "type": "string",
+          "description": "Detailed information about the action."
+        }
+      },
+      "required": [
+        "id",
+        "adminId",
+        "timestamp",
+        "action"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a push notification sent to a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Notification)"
+        },
+        "message": {
+          "type": "string",
+          "description": "The message content of the notification."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the notification was sent.",
+          "format": "date-time"
+        },
+        "deliveryStatus": {
+          "type": "string",
+          "description": "Status of notification delivery (e.g., sent, delivered, opened)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "message",
+        "timestamp"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile data.  Used for capturing user information at the start of the chat. Includes fields for name, email, and metadata such as createdAt, utm, origin, city, and device.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/chat_messages/{messageId}",
+        "definition": {
+          "entityName": "ChatMessage",
+          "schema": {
+            "$ref": "#/backend/entities/ChatMessage"
+          },
+          "description": "Stores individual chat messages associated with a user.  Path-based ownership ensures only the user (and admins) can access these messages. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "messageId",
+              "description": "The unique identifier for the chat message."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chatbot_flows/{flowId}",
+        "definition": {
+          "entityName": "ChatbotFlow",
+          "schema": {
+            "$ref": "#/backend/entities/ChatbotFlow"
+          },
+          "description": "Stores the definition of chatbot flows. Accessible to admins for editing the chatbot's behavior.",
+          "params": [
+            {
+              "name": "flowId",
+              "description": "The unique identifier for the chatbot flow."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/chatbot_flows/{flowId}/steps/{stepId}",
+        "definition": {
+          "entityName": "ChatbotFlowStep",
+          "schema": {
+            "$ref": "#/backend/entities/ChatbotFlowStep"
+          },
+          "description": "Stores individual steps within a chatbot flow.  Allows admins to modify the messages and actions within each step.",
+          "params": [
+            {
+              "name": "flowId",
+              "description": "The unique identifier for the chatbot flow."
+            },
+            {
+              "name": "stepId",
+              "description": "The unique identifier for the chatbot flow step."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/admin_logs/{logId}",
+        "definition": {
+          "entityName": "AdminLog",
+          "schema": {
+            "$ref": "#/backend/entities/AdminLog"
+          },
+          "description": "Stores logs of admin panel activity for auditing purposes.  Restricted to admins only.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the admin log entry."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores push notifications sent to users. Path-based ownership allows access to notifications only to the specified user (and admins).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "notificationId",
+              "description": "The unique identifier for the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{adminId}",
+        "definition": {
+          "entityName": "AdminRole",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Marks a user as an admin. Existence of a document at this path grants admin privileges.  Used in security rules to authorize access to admin-only resources.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier for the admin user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "This Firestore structure prioritizes security and scalability for the chatbot and admin panel, adhering to the principles of Authorization Independence, Clarity of Intent, and DBAC. It leverages denormalization and structural segregation to simplify security rules and enable efficient data access. The core principle is that access control is determined by document existence or content within each document, avoiding hierarchical lookups.\n\n**Authorization Independence (CRITICAL):**  Denormalization is extensively used. For example, the `users/{userId}/chat_messages` collection automatically associates messages with a user. Admin access is determined by membership in the `/roles_admin/{uid}` collection, and this membership information is not checked against other collections using get() calls in security rules.\n\n**QAPs (Rules are not Filters):** Segregation ensures secure list operations. The `/users/{userId}/chat_messages` collection allows listing only the messages associated with a specific user. The `/admin_logs` collection is secured such that only admins can access the logs, supporting secure `list` operations.\n\n**Admin Panel & Chatbot Integration:**  The structure directly supports the admin panel's features. User metrics, chatbot flow control, user management, notifications, and logs are all structured in a way that allows the admin panel to efficiently read and manage this data.\n\n**Scalability:** By avoiding complex queries and `get()` calls in security rules, the structure ensures that read and write operations scale efficiently, even with a large number of users and messages."
+  }
+}

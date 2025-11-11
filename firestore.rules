@@ -1,0 +1,181 @@
+/**
+ * @file Firestore Security Rules for Chatbot Admin Panel
+ * @description This ruleset enforces a role-based access control model with strict separation of user and admin data.
+ *
+ * Core Philosophy:
+ *  - Access is granted based on user authentication and admin role.
+ *  - Data validation is minimized to facilitate rapid prototyping.
+ *  - Admin privileges are determined by the existence of a document in the `/roles_admin/{adminId}` collection.
+ *
+ * Data Structure:
+ *  - User-specific data (profiles, messages, notifications) is nested under `/users/{userId}`.
+ *  - Chatbot flows and steps are stored in `/chatbot_flows/{flowId}`.
+ *  - Admin logs are stored in `/admin_logs/{logId}` and are accessible only to admins.
+ *  - Admin role assignments are stored in `/roles_admin/{adminId}`.
+ *
+ * Key Security Decisions:
+ *  - Users can only access their own profile data and chat messages.
+ *  - Only authenticated admins can manage chatbot flows, access admin logs, and send notifications.
+ *  - Listing all users is disallowed for privacy.
+ *
+ * Denormalization for Authorization:
+ *  - User-specific data is nested under `/users/{userId}` to simplify ownership checks using `isOwner(userId)`.
+ *  - Admin privileges are determined by the existence of a document in `/roles_admin/{adminId}`, avoiding the need for `get()` calls to a separate roles collection.
+ *
+ * Structural Segregation:
+ *  - Admin logs are stored in a separate `/admin_logs` collection, ensuring that regular users cannot access them.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is made by an authenticated user.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user ID matches the authenticated user's ID.
+     * @param {string} userId - The user ID to compare against.
+     * @returns {boolean} True if the user ID matches the authenticated user's ID, false otherwise.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of a document.
+     * @param {string} userId - The user ID to compare against.
+     * @returns {boolean} True if the user ID matches the authenticated user's ID and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Checks if the requesting user is an admin.
+     * @returns {boolean} True if the user is an admin, false otherwise.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete) - Authenticated user can get, update, and delete their own profile.
+     * @deny (create) - User cannot create a profile with a different userId.
+     * @deny (update, delete) - User cannot update or delete another user's profile.
+     * @principle Enforces document ownership and restricts access to user's own data.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for chat messages within a user's profile.
+     * @path /users/{userId}/chat_messages/{messageId}
+     * @allow (create) - Authenticated user can create a chat message for themselves.
+     * @allow (get, list) - Authenticated user can get and list their own chat messages.
+     * @allow (update, delete) - User cannot update or delete chat messages once created.
+     * @deny (create) - User cannot create a chat message for another user.
+     * @deny (get, list) - User cannot get or list another user's chat messages.
+     * @principle Enforces document ownership and restricts access to user's own data.
+     */
+    match /users/{userId}/chat_messages/{messageId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for chatbot flows, accessible only to admins.
+     * @path /chatbot_flows/{flowId}
+     * @allow (get, list, create, update, delete) - Only admins can manage chatbot flows.
+     * @deny (get, list, create, update, delete) - Non-admins cannot manage chatbot flows.
+     * @principle Restricts access to admins.
+     */
+    match /chatbot_flows/{flowId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for chatbot flow steps, accessible only to admins.
+     * @path /chatbot_flows/{flowId}/steps/{stepId}
+     * @allow (get, list, create, update, delete) - Only admins can manage chatbot flow steps.
+     * @deny (get, list, create, update, delete) - Non-admins cannot manage chatbot flow steps.
+     * @principle Restricts access to admins.
+     */
+    match /chatbot_flows/{flowId}/steps/{stepId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for admin logs, accessible only to admins.
+     * @path /admin_logs/{logId}
+     * @allow (get, list, create, update, delete) - Only admins can manage admin logs.
+     * @deny (get, list, create, update, delete) - Non-admins cannot manage admin logs.
+     * @principle Restricts access to admins.
+     */
+    match /admin_logs/{logId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Rules for notifications within a user's profile.
+     * @path /users/{userId}/notifications/{notificationId}
+     * @allow (create) - Admin user can create a notification for a specific user.
+     * @allow (get, list) - Authenticated user can get and list their own notifications.
+     * @allow (update, delete) - User cannot update or delete notifications once created.
+     * @deny (create) - User cannot create a notification for another user.
+     * @deny (get, list) - User cannot get or list another user's notifications.
+     * @principle Enforces document ownership and restricts access to user's own data.
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() && request.resource.data.userId == userId;
+      allow update: if false;
+      allow delete: if false;
+    }
+    
+    /**
+     * @description Rules for Admin Role assignment.
+     * @path /roles_admin/{adminId}
+     * @allow create: User can assign Admin role themselves.
+     * @allow get: if isAdmin();
+     * @allow list: if isAdmin();
+     * @allow update: if false;
+     * @allow delete: if false;
+     */
+        match /roles_admin/{adminId} {
+          allow get: if isAdmin();
+          allow list: if isAdmin();
+          allow create: if isSignedIn() && request.auth.uid == adminId;
+          allow update: if false;
+          allow delete: if false;
+        }
+  }
+}
