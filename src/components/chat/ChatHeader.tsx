@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { ArrowLeft, Phone, Video } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 
@@ -32,12 +32,6 @@ export default function ChatHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Video className="h-5 w-5 text-muted-foreground" />
-        </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Phone className="h-5 w-5 text-muted-foreground" />
-        </Button>
       </div>
     </header>
   );
