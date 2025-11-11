@@ -22,10 +22,10 @@ export default function ChatHeader() {
             data-ai-hint={avatarImage.imageHint}
           />
         )}
-        <AvatarFallback>Gi</AvatarFallback>
+        <AvatarFallback>S</AvatarFallback>
       </Avatar>
       <div className="ml-3 flex-grow">
-        <p className="font-semibold font-headline text-lg">Gi</p>
+        <p className="font-semibold font-headline text-lg">Ster</p>
         <div className="flex items-center gap-1.5">
             <div className="h-2.5 w-2.5 rounded-full bg-green-500"></div>
             <p className="text-sm text-muted-foreground">Online</p>

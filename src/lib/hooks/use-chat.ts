@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 type ConversationStage = 
-  | 'start'
-  | 'awaiting_name'
-  | 'awaiting_email'
-  | 'awaiting_link_permission'
+  | 'start' // 1
+  | 'awaiting_first_response' // 1 -> 2,3
+  | 'awaiting_gift_response' // 3 -> 4,5
+  | 'awaiting_like_response' // 5 -> 6,7
+  | 'awaiting_more_response' // 8 -> 9,10,11,12
+  | 'awaiting_final_confirmation' // 12 -> 13,14
   | 'end';
 
 const formatFileSize = (bytes: number) => {
@@ -33,83 +36,115 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [stage, setStage] = useState<ConversationStage>('start');
-  const [userData, setUserData] = useState({ name: '', email: '' });
   const { toast } = useToast();
-
+  
   const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
-    setMessages((prev) => [
-      ...prev,
-      { ...message, id: crypto.randomUUID(), timestamp: Date.now() },
-    ]);
+    const newMessage = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
+    setMessages((prev) => [...prev, newMessage]);
+    return newMessage;
   };
   
   const botReply = (text: string, delay: number = 1000, newStage?: ConversationStage) => {
     setIsTyping(true);
-    setTimeout(() => {
-      addMessage({ sender: 'bot', text, type: 'text' });
-      setIsTyping(false);
-      if (newStage) {
-        setStage(newStage);
-      }
-    }, delay);
+    return new Promise<Message>(resolve => {
+        setTimeout(() => {
+          const msg = addMessage({ sender: 'bot', text, type: 'text' });
+          setIsTyping(false);
+          if (newStage) {
+            setStage(newStage);
+          }
+          resolve(msg);
+        }, delay);
+    });
   };
 
-  useEffect(() => {
-    // Initial welcome message
-    botReply("Oi, eu sou Gi. Posso te fazer 2 perguntinhas rápidas?", 500, 'awaiting_name');
-  }, []);
+  const botMediaReply = (type: 'image' | 'audio', mediaUrl: string, text?: string, delay: number = 1000, newStage?: ConversationStage) => {
+    setIsTyping(true);
+    return new Promise<Message>(resolve => {
+        setTimeout(() => {
+          let mediaMeta: Message['mediaMeta'] = {};
+          if (type === 'audio') {
+              mediaMeta = { duration: '0:05' } // Placeholder duration
+          }
+          const msg = addMessage({ sender: 'bot', type, mediaUrl, text, mediaMeta });
+          setIsTyping(false);
+          if (newStage) {
+            setStage(newStage);
+          }
+          resolve(msg);
+        }, delay);
+    });
+  }
 
-  const handleUserMessage = (text: string) => {
+
+  useEffect(() => {
+    if (stage === 'start') {
+        botReply("Oi, gostoso, como você tá?❤", 500, 'awaiting_first_response');
+    }
+  }, [stage]);
+
+  const handleUserMessage = async (text: string) => {
     addMessage({ sender: 'user', text, type: 'text' });
     
     switch (stage) {
-      case 'awaiting_name':
-        setUserData(prev => ({ ...prev, name: text }));
-        botReply(`Prazer, ${text}! Agora, qual o seu melhor e-mail?`, 1200, 'awaiting_email');
+      case 'awaiting_first_response':
+        setIsTyping(true);
+        await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…", 1500);
+        await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", 2000, 'awaiting_gift_response');
         break;
 
-      case 'awaiting_email':
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (emailRegex.test(text)) {
-          setUserData(prev => ({ ...prev, email: text }));
-          
-          setIsTyping(true);
-          setTimeout(() => {
-            addMessage({
-                sender: 'bot',
-                type: 'audio',
-                mediaUrl: '/empathy-audio.mp3', // Placeholder for function-based URL
-                mediaMeta: { duration: '00:05' },
-            });
-            setIsTyping(false);
-
-            setTimeout(() => {
-                botReply("Obrigada! Suas informações estão seguras comigo. Posso te enviar o link para a próxima etapa?", 2000, 'awaiting_link_permission');
-            }, 500);
-
-          }, 1500);
-
+      case 'awaiting_gift_response':
+        const negativeResponse = ['não', 'nao', 'agora não', 'depois'].some(w => text.toLowerCase().includes(w));
+        if (negativeResponse) {
+           await botReply("Tem certeza que não quer bb😈?", 1000);
+           // Remain in the same stage
         } else {
-          botReply("Parece que esse e-mail não é válido. Você poderia tentar de novo?", 1000);
+            const firstImage = PlaceHolderImages.find(img => img.id === 'preview1');
+            await botMediaReply('image', firstImage?.imageUrl || '', "só uma prévia do que você pode ter mais, bebê 😈", 1500);
+            await botReply("Acabei de tirar pra você, gostoso, me diz, gostou? 🙈", 1200, 'awaiting_like_response');
         }
         break;
 
-      case 'awaiting_link_permission':
-        const positiveResponse = ['sim', 's', 'pode', 'claro', 'ok', 'yes'].some(w => text.toLowerCase().includes(w));
-        if (positiveResponse) {
-          botReply("Perfeito! Gerando seu link exclusivo...", 1000);
-          setTimeout(() => {
-             addMessage({ sender: 'bot', type: 'link', text: 'https://firebase.google.com/' });
-             setIsTyping(false);
-             setStage('end');
-          }, 2500);
+      case 'awaiting_like_response':
+        const positiveLike = ['sim', 'gostei', 'claro', 'muito'].some(w => text.toLowerCase().includes(w));
+        if (positiveLike) {
+            await botReply("Você gosta né safado, quer ver mais pouquinho? Tô cheia de tesão 😈", 1500);
+            const secondImage = PlaceHolderImages.find(img => img.id === 'preview2');
+            await botMediaReply('image', secondImage?.imageUrl || '', "mais uma só pra te deixar ainda mais louco, quer mais?", 2000);
+            await botReply("Gostou assim meu amor? Tá querendo mais ou vai ficar me pedindo até eu ceder de vez? 👀", 1500, 'awaiting_more_response');
         } else {
-          botReply("Tudo bem. Se mudar de ideia, é só me avisar!", 1000, 'end');
+           await botReply("Hmm, achei que ia gostar. Quer tentar outra coisa?", 1000);
         }
         break;
       
-      default:
-        botReply("Não entendi, mas se precisar de algo, estou aqui!", 1000);
+      case 'awaiting_more_response':
+        const wantsMore = ['quero', 'mais', 'mostra', 'todinha'].some(w => text.toLowerCase().includes(w));
+        if (wantsMore) {
+            await botReply("Seu safado, conversar com você tá me deixando toda molhadinha 🥵", 1500);
+            await botReply("Entre nós, bebê… tô adorando conversar com você, já tô doida pra você me ver bem peladinha, gozando bem gostosa só pra você 😈", 2000);
+            await botMediaReply('audio', '/empathy-audio.mp3', undefined, 1500);
+            await botReply("E aí, amor, o que você me diz? Tá preparado pra me ter inteirinha pra você? 🔥❤", 1200, 'awaiting_final_confirmation');
+        } else {
+            await botReply("Se não quer mais, tudo bem. Fico te esperando aqui...", 1000, 'end');
+        }
+        break;
+
+      case 'awaiting_final_confirmation':
+        const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
+        if (finalConfirmation) {
+            setIsTyping(true);
+            setTimeout(() => {
+                addMessage({ sender: 'bot', type: 'link', text: 'https://firebase.google.com/' }); // Placeholder Link
+                setIsTyping(false);
+                botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, 'end');
+            }, 2000);
+        } else {
+            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", 1000, 'end');
+        }
+        break;
+
+      default: // 'end' stage or any unhandled case
+        botReply("Se precisar de mais alguma coisa, é só chamar, gostoso. 😉", 1000);
         break;
     }
   };
@@ -141,7 +176,6 @@ export function useChat() {
         ]);
     }
     
-    // Simulate bot offline error
     if (!navigator.onLine) {
         toast({
             variant: "destructive",
@@ -150,7 +184,7 @@ export function useChat() {
         });
     }
 
-    botReply("Recebi sua mídia!", 1500);
+    botReply("Uau, que delícia! 🔥 Adorei o que você mandou...", 1500);
   };
 
 
