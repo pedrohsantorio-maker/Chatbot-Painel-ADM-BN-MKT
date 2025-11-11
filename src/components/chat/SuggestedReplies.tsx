@@ -36,7 +36,7 @@ export default function SuggestedReplies({
             className={cn(
               "rounded-full transition-transform duration-150 active:scale-95",
               isFreeTextHint 
-                ? "text-sm font-bold text-foreground bg-input px-3 py-1 cursor-default w-full pointer-events-none"
+                ? "text-sm font-bold text-white bg-transparent px-3 py-1 cursor-default w-full pointer-events-none"
                 : "bg-background/50 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/10"
             )}
             onClick={() => onSelectReply(reply)}
