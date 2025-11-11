@@ -18,9 +18,6 @@ export default function WelcomePage() {
             <div className="flex justify-center items-center mb-4">
               <Sparkles className="w-12 h-12 text-primary" />
             </div>
-            <CardTitle className="text-3xl font-bold font-headline text-white">
-              Bem-vinda!
-            </CardTitle>
             <CardDescription className="text-lg text-muted-foreground">
               Prepare-se para uma conversa especial.
             </CardDescription>
