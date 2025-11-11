@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useUser, useFirestore, useCollection, useAuth, useMemoFirebase } from '@/firebase';
+import { collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 type ConversationStage = 
   | 'start'
@@ -33,34 +36,71 @@ const formatAudioDuration = (file: File, callback: (duration: string) => void) =
 };
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const auth = useAuth();
+  
+  const messagesCollectionRef = useMemoFirebase(() => 
+    user && firestore ? query(collection(firestore, `users/${user.uid}/chat_messages`), orderBy('timestamp', 'asc')) : null,
+  [user, firestore]);
+  
+  const { data: messages, isLoading: messagesLoading } = useCollection<Omit<Message, 'id'>>(messagesCollectionRef);
+
   const [isTyping, setIsTyping] = useState(false);
   const [stage, setStage] = useState<ConversationStage>('start');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
-  const initialMessageSent = useRef(false);
+  const flowStarted = useRef(false);
+
+  useEffect(() => {
+    if (!user && !isUserLoading) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [user, isUserLoading, auth]);
+
+  const addMessageToFirestore = async (message: Omit<Message, 'id'>) => {
+    if (!user || !firestore) return;
+    const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
+    
+    // Convert client-side timestamp to server-side timestamp for consistency
+    const messageToSend = {
+      ...message,
+      timestamp: serverTimestamp(),
+      // Ensure suggestions are not saved with user messages
+      ...(message.sender === 'user' && { suggestions: [] }),
+    };
+
+    try {
+      await addDoc(collectionRef, messageToSend);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro de Conexão",
+        description: "Não foi possível enviar a mensagem. Verifique sua conexão.",
+      });
+    }
+  };
+
   
   const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
-    setMessages((prev) => {
-      // Remove suggestions from previous bot message
-      const updatedPrev = prev.map(m => ({ ...m, suggestions: [] }));
-      return [...updatedPrev, newMessage];
-    });
+    const messageWithClientTimestamp = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
     if (message.sender === 'user') {
       setIsSending(true);
-      setTimeout(() => setIsSending(false), 1000); // Debounce
+      setTimeout(() => setIsSending(false), 1000);
+      addMessageToFirestore(messageWithClientTimestamp);
+    } else {
+       addMessageToFirestore(messageWithClientTimestamp);
     }
-    return newMessage;
   };
   
   const botReply = (text: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
     setIsTyping(true);
     setSuggestions([]);
-    return new Promise<Message>(resolve => {
+    return new Promise<void>(resolve => {
         setTimeout(() => {
-          const msg = addMessage({ sender: 'bot', text, type: 'text', suggestions: options.suggestions });
+          addMessage({ sender: 'bot', text, type: 'text', suggestions: options.suggestions });
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -68,7 +108,7 @@ export function useChat() {
           if (options.suggestions) {
             setSuggestions(options.suggestions);
           }
-          resolve(msg);
+          resolve();
         }, delay);
     });
   };
@@ -76,13 +116,13 @@ export function useChat() {
   const botMediaReply = (type: 'image' | 'audio' | 'link', mediaUrl: string, text?: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
     setIsTyping(true);
     setSuggestions([]);
-    return new Promise<Message>(resolve => {
+    return new Promise<void>(resolve => {
         setTimeout(() => {
           let mediaMeta: Message['mediaMeta'] = {};
           if (type === 'audio') {
               mediaMeta = { duration: '0:05' } // Placeholder duration
           }
-          const msg = addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions });
+          addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions });
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -90,28 +130,59 @@ export function useChat() {
            if (options.suggestions) {
             setSuggestions(options.suggestions);
           }
-          resolve(msg);
+          resolve();
         }, delay);
     });
   }
 
 
   useEffect(() => {
-    if (stage === 'start' && !initialMessageSent.current) {
-        initialMessageSent.current = true;
-        botReply("Oi, gostoso, como você tá?❤", 500, {
-            newStage: 'awaiting_first_response',
-            suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
-        });
+    if (messagesLoading || !messages || flowStarted.current) return;
+    
+    if (messages.length === 0) {
+      flowStarted.current = true;
+      botReply("Oi, gostoso, como você tá?❤", 500, {
+          newStage: 'awaiting_first_response',
+          suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
+      });
+    } else {
+        // Re-establish flow state from the last message
+        const lastMessage = messages[messages.length - 1];
+        const lastBotMessage = [...messages].reverse().find(m => m.sender === 'bot');
+
+        if(lastBotMessage?.suggestions && lastBotMessage.suggestions.length > 0) {
+            setSuggestions(lastBotMessage.suggestions);
+        }
+        
+        // This is a simplified logic. A more robust solution would be to save the stage itself.
+        if (lastMessage.sender === 'bot') {
+           if(lastMessage.text?.includes("o que você me diz?")){
+             setStage('awaiting_final_confirmation');
+           } else if (lastMessage.text?.includes("Estou te esperando")){
+             setStage('end');
+           }
+           // ... add more rules to determine stage from message content
+        }
     }
-  }, [stage]);
+  }, [messages, messagesLoading]);
 
   const handleUserMessage = async (text: string) => {
-    if (text === '(Livre digitação)') return; // Don't send the hint as a message
+    if (text === '(Livre digitação)') return;
     addMessage({ sender: 'user', text, type: 'text' });
-    setSuggestions([]); // Clear suggestions after user sends a message
+    setSuggestions([]);
     
-    switch (stage) {
+    // Determine the current stage from the last message if not already set by botReply
+    const lastBotMessage = messages?.slice().reverse().find(m => m.sender === 'bot');
+    let currentStage = stage;
+    if (lastBotMessage?.text?.includes("como você tá?")) currentStage = 'awaiting_first_response';
+    else if (lastBotMessage?.text?.includes("presentinho?")) currentStage = 'awaiting_gift_response';
+    else if (lastBotMessage?.text?.includes("gostou?")) currentStage = 'awaiting_like_response';
+    else if (lastBotMessage?.text?.includes("quer mais?")) currentStage = 'awaiting_more_response';
+    else if (lastBotMessage?.text?.includes("inteirinha pra você?")) currentStage = 'awaiting_final_confirmation';
+    else if (lastBotMessage?.text?.includes("Estou te esperando")) currentStage = 'end';
+
+
+    switch (currentStage) {
       case 'awaiting_first_response':
         setIsTyping(true);
         await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…", 1500);
@@ -122,7 +193,6 @@ export function useChat() {
         const negativeResponse = ['não', 'nao', 'agora não', 'depois'].some(w => text.toLowerCase().includes(w));
         if (negativeResponse) {
            await botReply("Tem certeza que não quer bb😈?", 1000, { suggestions: ['(Livre digitação)']});
-           // Remain in the same stage
         } else {
             const firstImage = PlaceHolderImages.find(img => img.id === 'preview1');
             await botMediaReply('image', firstImage?.imageUrl || '', "só uma prévia do que você pode ter mais, bebê 😈", 1500);
@@ -187,8 +257,6 @@ export function useChat() {
   const sendMediaMessage = (file: File, type: 'audio' | 'image' | 'video') => {
     const mediaUrl = URL.createObjectURL(file);
     const commonMessagePart = {
-        id: crypto.randomUUID(),
-        timestamp: Date.now(),
         sender: 'user' as const,
         mediaUrl,
         mediaMeta: {
@@ -199,16 +267,10 @@ export function useChat() {
 
     if (type === 'audio') {
         formatAudioDuration(file, (duration) => {
-            setMessages((prev) => [
-                ...prev,
-                { ...commonMessagePart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } },
-            ]);
+            addMessage({ ...commonMessagePart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
         });
     } else {
-         setMessages((prev) => [
-            ...prev,
-            { ...commonMessagePart, type },
-        ]);
+         addMessage({ ...commonMessagePart, type });
     }
     
     if (!navigator.onLine) {
@@ -223,5 +285,5 @@ export function useChat() {
   };
 
 
-  return { messages, isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
+  return { messages: messages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
 }

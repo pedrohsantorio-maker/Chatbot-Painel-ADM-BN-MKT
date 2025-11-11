@@ -1,8 +1,10 @@
+import { Timestamp } from "firebase/firestore";
+
 export type Message = {
   id: string;
   text?: string;
   sender: 'user' | 'bot';
-  timestamp: number;
+  timestamp: number | Timestamp;
   type: 'text' | 'audio' | 'image' | 'video' | 'link';
   mediaUrl?: string;
   mediaMeta?: {

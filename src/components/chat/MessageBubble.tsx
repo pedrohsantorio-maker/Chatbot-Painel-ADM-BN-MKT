@@ -8,6 +8,8 @@ import { Button } from '../ui/button';
 import { Link2 } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { Timestamp } from 'firebase/firestore';
+
 
 type MessageBubbleProps = {
   message: Message;
@@ -18,15 +20,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
-    // This check ensures the code runs only on the client side.
-    if (typeof window !== 'undefined') {
-        const updateTimestamp = () => {
-            setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
-        }
-        updateTimestamp();
-        // Optional: Update every few seconds/minutes
-        const interval = setInterval(updateTimestamp, 60000); // update every minute
-        return () => clearInterval(interval);
+    if (typeof window !== 'undefined' && message.timestamp) {
+      const date = message.timestamp instanceof Timestamp 
+        ? message.timestamp.toDate() 
+        : new Date(message.timestamp);
+
+      const updateTimestamp = () => {
+        setTimeAgo(formatDistanceToNowStrict(date, { addSuffix: true, locale: ptBR }));
+      };
+      updateTimestamp();
+      const interval = setInterval(updateTimestamp, 60000);
+      return () => clearInterval(interval);
     }
   }, [message.timestamp]);
 
@@ -70,8 +74,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             className={cn(
             'rounded-3xl px-5 py-3 shadow-md',
             isUser
-                ? 'bg-foreground text-background rounded-br-lg self-end'
-                : 'bg-accent text-accent-foreground rounded-bl-lg self-start'
+                ? 'bg-white text-black rounded-br-lg self-end'
+                : 'bg-primary text-primary-foreground rounded-bl-lg self-start'
             )}
         >
             <div className="break-words">{renderContent()}</div>
