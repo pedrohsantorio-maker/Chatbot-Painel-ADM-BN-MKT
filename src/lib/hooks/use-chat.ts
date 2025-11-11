@@ -100,6 +100,7 @@ export function useChat() {
   }, [stage]);
 
   const handleUserMessage = async (text: string) => {
+    if (text === '(Livre digitação)') return; // Don't send the hint as a message
     addMessage({ sender: 'user', text, type: 'text' });
     setSuggestions([]); // Clear suggestions after user sends a message
     
@@ -107,13 +108,13 @@ export function useChat() {
       case 'awaiting_first_response':
         setIsTyping(true);
         await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…", 1500);
-        await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", 2000, { newStage: 'awaiting_gift_response' });
+        await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", 2000, { newStage: 'awaiting_gift_response', suggestions: ['(Livre digitação)'] });
         break;
 
       case 'awaiting_gift_response':
         const negativeResponse = ['não', 'nao', 'agora não', 'depois'].some(w => text.toLowerCase().includes(w));
         if (negativeResponse) {
-           await botReply("Tem certeza que não quer bb😈?", 1000);
+           await botReply("Tem certeza que não quer bb😈?", 1000, { suggestions: ['(Livre digitação)']});
            // Remain in the same stage
         } else {
             const firstImage = PlaceHolderImages.find(img => img.id === 'preview1');
@@ -136,7 +137,7 @@ export function useChat() {
                 suggestions: ['Quero mais safada 😈', 'Quero te ver todinha👀']
             });
         } else {
-           await botReply("Hmm, achei que ia gostar. Quer tentar outra coisa?", 1000);
+           await botReply("Hmm, achei que ia gostar. Quer tentar outra coisa?", 1000, { suggestions: ['(Livre digitação)'] });
         }
         break;
       
@@ -203,7 +204,7 @@ export function useChat() {
         toast({
             variant: "destructive",
             title: "Serviço temporariamente indisponível",
-            description: "Você parece estar offline. A mensagem será enviada assim que a conexão for restaurada.",
+            description: "Você parecer estar offline. A mensagem será enviada assim que a conexão for restaurada.",
         });
     }
 
@@ -213,5 +214,3 @@ export function useChat() {
 
   return { messages, isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage };
 }
-
-    

@@ -25,17 +25,29 @@ export default function SuggestedReplies({
         className
       )}
     >
-      {suggestions.map((reply) => (
-        <Button
-          key={reply}
-          variant="outline"
-          size="sm"
-          className="rounded-full bg-background/50 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/10"
-          onClick={() => onSelectReply(reply)}
-        >
-          {reply}
-        </Button>
-      ))}
+      {suggestions.map((reply) => {
+        const isFreeTextHint = reply === '(Livre digitação)';
+        if (isFreeTextHint) {
+          return (
+            <div key={reply} className="text-center w-full">
+              <span className="text-xs text-muted-foreground italic">
+                {reply}
+              </span>
+            </div>
+          );
+        }
+        return (
+          <Button
+            key={reply}
+            variant="outline"
+            size="sm"
+            className="rounded-full bg-background/50 backdrop-blur-sm border-primary/30 text-primary hover:bg-primary/10"
+            onClick={() => onSelectReply(reply)}
+          >
+            {reply}
+          </Button>
+        );
+      })}
     </div>
   );
 }
