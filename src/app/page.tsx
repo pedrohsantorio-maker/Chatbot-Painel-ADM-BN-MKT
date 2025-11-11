@@ -13,7 +13,7 @@ export default function AgeGatePage() {
 
       <div className="relative z-10 flex flex-col items-center text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-primary mb-12">
-          Pronto para receber o melhor conteúdo?
+          Pronto para receber o melhor conteúdo?😈
         </h1>
         <Card className="w-full max-w-md text-center bg-card/80 border-border shadow-2xl backdrop-blur-sm rounded-2xl">
           <CardHeader>
