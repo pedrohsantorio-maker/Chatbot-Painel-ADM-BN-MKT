@@ -121,7 +121,6 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
   };
 
   return (
-    <div className="p-3 border-t bg-card sticky bottom-0">
       <form onSubmit={handleSendMessage} className="flex items-center gap-2">
         {isRecording || audioBlob ? (
           <div className="flex w-full items-center gap-2">
@@ -177,6 +176,5 @@ export default function ChatInput({ onSendMessage, onSendMedia }: ChatInputProps
           </>
         )}
       </form>
-    </div>
   );
 }

@@ -10,4 +10,5 @@ export type Message = {
     fileName?: string;
     fileSize?: string;
   };
+  suggestions?: string[];
 };

@@ -12,19 +12,19 @@ type MessageListProps = {
 };
 
 export default function MessageList({ messages, isTyping }: MessageListProps) {
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewport = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    if (scrollViewport.current) {
+      scrollViewport.current.scrollTo({
+        top: scrollViewport.current.scrollHeight,
         behavior: 'smooth',
       });
     }
   }, [messages, isTyping]);
 
   return (
-    <ScrollArea className="flex-grow p-4" viewportRef={scrollAreaRef}>
+    <ScrollArea className="flex-grow p-4" viewportRef={scrollViewport}>
       <div className="flex flex-col gap-4">
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
