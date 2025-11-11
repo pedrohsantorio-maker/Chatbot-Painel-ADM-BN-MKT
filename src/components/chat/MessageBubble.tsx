@@ -18,8 +18,15 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [timeAgo, setTimeAgo] = useState('');
 
   useEffect(() => {
+    // This check ensures the code runs only on the client side.
     if (typeof window !== 'undefined') {
-        setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
+        const updateTimestamp = () => {
+            setTimeAgo(formatDistanceToNowStrict(message.timestamp, { addSuffix: true, locale: ptBR }));
+        }
+        updateTimestamp();
+        // Optional: Update every few seconds/minutes
+        const interval = setInterval(updateTimestamp, 60000); // update every minute
+        return () => clearInterval(interval);
     }
   }, [message.timestamp]);
 
@@ -32,7 +39,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         ) : null;
       case 'link':
          return (
-            <Button asChild variant="secondary" className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button asChild variant="secondary" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <a href={message.text} target="_blank" rel="noopener noreferrer">
                     <Link2 className="mr-2 h-4 w-4" />
                     Abrir Link
@@ -64,7 +71,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
             'rounded-3xl px-5 py-3 shadow-md',
             isUser
                 ? 'bg-primary text-primary-foreground rounded-br-lg self-end'
-                : 'bg-accent/50 text-accent-foreground rounded-bl-lg self-start'
+                : 'bg-accent text-accent-foreground rounded-bl-lg self-start'
             )}
         >
             <div className="break-words">{renderContent()}</div>
