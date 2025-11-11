@@ -174,7 +174,11 @@ export function useChat() {
         }
         break;
 
-      default: // 'end' stage or any unhandled case
+      case 'end':
+        botReply("Não não meu amor, agora você terá que ir para o link se quiser me ver peladinha🤭 vamos lá logo gostoso", 1000);
+        break;
+
+      default: // any unhandled case
         botReply("Se precisar de mais alguma coisa, é só chamar, gostoso. 😉", 1000);
         break;
     }
