@@ -5,8 +5,9 @@ import { useAuth, useFirestore, useUser } from '@/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  Auth,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,14 +25,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState('ghostzero355@gmail.com');
   const [password, setPassword] = useState('Senha123!');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
 
+  // State to ensure Firebase services are ready before allowing login.
+  const [firebaseReady, setFirebaseReady] = useState(false);
+
   useEffect(() => {
-    // Redirect if user is already logged in and auth is no longer loading
+    // Firebase services are ready when they are not null.
+    if (auth && firestore) {
+      setFirebaseReady(true);
+    }
+  }, [auth, firestore]);
+
+  useEffect(() => {
+    // Redirect if user is already logged in and auth check is complete.
     if (!isUserLoading && user) {
       router.push('/admin/dashboard');
     }
@@ -39,11 +51,13 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) {
+
+    // Double-check services are available before proceeding.
+    if (!firebaseReady) {
         toast({
             variant: "destructive",
-            title: "Erro de Inicialização",
-            description: "Os serviços do Firebase não estão disponíveis. Tente novamente mais tarde.",
+            title: "Aguarde um momento",
+            description: "Os serviços de autenticação ainda estão carregando. Tente novamente em breve.",
         });
         return;
     }
@@ -51,16 +65,12 @@ export default function LoginPage() {
     setIsLoggingIn(true);
 
     try {
+      // Try to sign in first
       await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: 'Login bem-sucedido',
-        description: 'Redirecionando para o dashboard.',
-      });
-      // The useEffect will handle the redirect, but we can also push here.
       router.push('/admin/dashboard');
     } catch (error: any) {
+      // If user does not exist, try to create a new admin user
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        // If user does not exist, try to create a new admin user
         try {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
@@ -78,17 +88,14 @@ export default function LoginPage() {
           
           toast({
             title: 'Conta de Administrador Criada',
-            description:
-              'Sua conta foi criada e você tem privilégios de administrador.',
+            description: 'Sua conta foi criada e você tem privilégios de administrador.',
           });
           router.push('/admin/dashboard');
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
             title: 'Falha na Criação da Conta',
-            description:
-              creationError.message ||
-              'Não foi possível criar a conta de administrador.',
+            description: creationError.message || 'Não foi possível criar a conta de administrador.',
           });
         }
       } else {
@@ -96,7 +103,7 @@ export default function LoginPage() {
         toast({
           variant: 'destructive',
           title: 'Falha no login',
-          description: 'Email ou senha inválidos. Tente novamente.',
+          description: error.message || 'Email ou senha inválidos. Tente novamente.',
         });
       }
     } finally {
@@ -104,15 +111,18 @@ export default function LoginPage() {
     }
   };
 
-  // While checking auth state, show a loading screen, but don't render the form.
+  // While checking auth state or if firebase services are not ready, show a loading screen.
   if (isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
   
-  // If user is logged in, this will be handled by useEffect redirect, but as a fallback, don't render the form.
+  // If user is already logged in, the useEffect will handle the redirect.
+  // This prevents a flash of the login form.
   if (user) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Redirecionando...</div>;
   }
+  
+  const isButtonDisabled = isLoggingIn || !firebaseReady;
 
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
@@ -148,8 +158,8 @@ export default function LoginPage() {
                 disabled={isLoggingIn}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoggingIn}>
-              {isLoggingIn ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isButtonDisabled}>
+              {isLoggingIn ? 'Entrando...' : (firebaseReady ? 'Entrar' : 'Carregando...')}
             </Button>
           </form>
         </CardContent>
