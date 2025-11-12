@@ -5,7 +5,7 @@ import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useFirestore, useCollection, useAuth, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, setDoc, doc } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 type ConversationStage = 
@@ -54,10 +54,22 @@ export function useChat() {
   const flowStarted = useRef(false);
 
   useEffect(() => {
-    if (!user && !isUserLoading) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
+    const initializeUser = async () => {
+      if (!user && !isUserLoading) {
+        initiateAnonymousSignIn(auth);
+      }
+      if (user && firestore) {
+        // Create user document if it doesn't exist
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, { 
+            id: user.uid,
+            email: user.email || null,
+            createdAt: serverTimestamp(),
+         }, { merge: true });
+      }
+    };
+    initializeUser();
+  }, [user, isUserLoading, auth, firestore]);
 
   const addMessageToFirestore = useCallback(async (message: Omit<Message, 'id'>) => {
     if (!user || !firestore) return;

@@ -7,11 +7,11 @@ import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { BarChart, MessageSquare, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import StatCards from '@/components/admin/StatCards';
 import { useAuth } from '@/firebase';
 import Link from 'next/link';
+import UsersTable from '@/components/admin/UsersTable';
 
-export default function AdminDashboard() {
+export default function AdminUsersPage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
@@ -49,7 +49,7 @@ export default function AdminDashboard() {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton isActive asChild>
+              <SidebarMenuButton asChild>
                 <Link href="/admin/dashboard">
                     <BarChart />
                     <span>Dashboard</span>
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton isActive asChild>
                  <Link href="/admin/users">
                     <Users />
                     <span>Usuários</span>
@@ -82,11 +82,11 @@ export default function AdminDashboard() {
         <header className="flex items-center justify-between border-b bg-background p-4">
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
-             <h1 className="text-2xl font-bold">Dashboard</h1>
+             <h1 className="text-2xl font-bold">Usuários</h1>
           </div>
         </header>
         <main className="p-4 md:p-6">
-            <StatCards />
+            <UsersTable />
         </main>
       </SidebarInset>
     </SidebarProvider>
