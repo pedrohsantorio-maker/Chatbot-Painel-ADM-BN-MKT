@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import {
   signInWithEmailAndPassword,
@@ -23,23 +23,23 @@ import { useToast } from '@/components/ui/use-toast';
 export default function LoginPage() {
   const [email, setEmail] = useState('ghostzero355@gmail.com');
   const [password, setPassword] = useState('Senha123!');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push('/admin/dashboard');
-    }
-  }, [user, isUserLoading, router]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoggingIn(true);
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      toast({
+        title: 'Login bem-sucedido',
+        description: 'Redirecionando para o dashboard.',
+      });
+      router.push('/admin/dashboard');
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
         try {
@@ -61,6 +61,7 @@ export default function LoginPage() {
               description:
                 'Sua conta foi criada e você tem privilégios de administrador.',
             });
+            router.push('/admin/dashboard');
           }
         } catch (creationError: any) {
           toast({
@@ -68,7 +69,7 @@ export default function LoginPage() {
             title: 'Falha na Criação da Conta',
             description:
               creationError.message ||
-              'Não foi possível criar a conta de administrador.',
+              'Não foi possível criar la conta de administrador.',
           });
         }
       } else {
@@ -78,6 +79,8 @@ export default function LoginPage() {
           description: 'Email ou senha inválidos. Tente novamente.',
         });
       }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -113,8 +116,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isUserLoading}>
-              {isUserLoading ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+              {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>
