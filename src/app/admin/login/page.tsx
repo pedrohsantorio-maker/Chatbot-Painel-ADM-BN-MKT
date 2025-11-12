@@ -31,7 +31,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push('/admin/dashboard');
+      // On successful login, the useEffect will redirect to dashboard
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -41,6 +41,10 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+  
+  if (isUserLoading || user) {
+    return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
+  }
 
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
