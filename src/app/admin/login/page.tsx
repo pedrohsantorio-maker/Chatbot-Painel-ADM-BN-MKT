@@ -31,7 +31,7 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
 
   useEffect(() => {
-    // Redirect if user is already logged in
+    // Redirect if user is already logged in and auth is no longer loading
     if (!isUserLoading && user) {
       router.push('/admin/dashboard');
     }
@@ -39,7 +39,14 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) return;
+    if (!auth || !firestore) {
+        toast({
+            variant: "destructive",
+            title: "Erro de Inicialização",
+            description: "Os serviços do Firebase não estão disponíveis. Tente novamente mais tarde.",
+        });
+        return;
+    }
 
     setIsLoggingIn(true);
 
@@ -49,10 +56,11 @@ export default function LoginPage() {
         title: 'Login bem-sucedido',
         description: 'Redirecionando para o dashboard.',
       });
+      // The useEffect will handle the redirect, but we can also push here.
       router.push('/admin/dashboard');
     } catch (error: any) {
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-        // Attempt to create a new admin user if the user does not exist
+        // If user does not exist, try to create a new admin user
         try {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
@@ -84,11 +92,11 @@ export default function LoginPage() {
           });
         }
       } else {
-        // Handle other login errors (e.g., wrong password)
+        // Handle other login errors (e.g., wrong password, network errors)
         toast({
           variant: 'destructive',
           title: 'Falha no login',
-          description: error.message || 'Email ou senha inválidos. Tente novamente.',
+          description: 'Email ou senha inválidos. Tente novamente.',
         });
       }
     } finally {
@@ -96,7 +104,7 @@ export default function LoginPage() {
     }
   };
 
-  // While checking auth state, show a loading screen
+  // While checking auth state, show a loading screen, but don't render the form.
   if (isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
