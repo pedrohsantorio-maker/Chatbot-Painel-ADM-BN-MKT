@@ -22,7 +22,7 @@ export default function AdminUsersPage() {
     }
   }, [user, isUserLoading, router]);
   
-  if (isUserLoading || !user) {
+  if (isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
 

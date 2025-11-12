@@ -23,7 +23,7 @@ export default function AdminDashboard() {
     }
   }, [user, isUserLoading, router]);
   
-  if (isUserLoading || !user) {
+  if (isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
 
@@ -64,9 +64,11 @@ export default function AdminDashboard() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Users />
-                <span>Gerenciar Quiz</span>
+              <SidebarMenuButton asChild>
+                 <Link href="/admin/users">
+                    <Users />
+                    <span>Gerenciar Quiz</span>
+                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
