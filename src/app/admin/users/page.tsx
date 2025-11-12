@@ -39,10 +39,10 @@ export default function AdminUsersPage() {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <BarChart className="h-5 w-5" />
+              <MessageSquare className="h-5 w-5" />
             </div>
             <h2 className="text-lg font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-              Admin
+              Chatbot
             </h2>
           </div>
         </SidebarHeader>
@@ -57,17 +57,17 @@ export default function AdminUsersPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton>
-                <MessageSquare />
-                <span>Leads do Dia</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
               <SidebarMenuButton isActive asChild>
                  <Link href="/admin/users">
                     <Users />
-                    <span>Gerenciar Quiz</span>
+                    <span>Leads</span>
                 </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton>
+                <MessageSquare />
+                <span>Conversas</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
         <header className="flex items-center justify-between border-b bg-background p-4">
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
-             <h1 className="text-2xl font-bold">Gerenciar Quiz</h1>
+             <h1 className="text-2xl font-bold">Leads do Chatbot</h1>
           </div>
         </header>
         <main className="p-4 md:p-6">

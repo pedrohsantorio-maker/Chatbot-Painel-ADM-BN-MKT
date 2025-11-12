@@ -40,10 +40,10 @@ export default function AdminDashboard() {
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <BarChart className="h-5 w-5" />
+              <MessageSquare className="h-5 w-5" />
             </div>
             <h2 className="text-lg font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-              Admin
+              Chatbot
             </h2>
           </div>
         </SidebarHeader>
@@ -58,17 +58,17 @@ export default function AdminDashboard() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton>
-                <MessageSquare />
-                <span>Leads do Dia</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
               <SidebarMenuButton asChild>
                  <Link href="/admin/users">
                     <Users />
-                    <span>Gerenciar Quiz</span>
+                    <span>Leads</span>
                  </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton>
+                <MessageSquare />
+                <span>Conversas</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -83,7 +83,7 @@ export default function AdminDashboard() {
         <header className="flex flex-wrap items-center justify-between gap-4 border-b bg-background p-4">
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
-             <h1 className="text-2xl font-bold">Painel de Admin</h1>
+             <h1 className="text-2xl font-bold">Painel de Monitoramento – Chatbot</h1>
           </div>
            <div className="flex items-center gap-2">
             <Button variant="outline">Hoje</Button>
@@ -101,11 +101,11 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Visitas Diárias</CardTitle>
+                        <CardTitle>Conversas Iniciadas por Dia</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="h-80 w-full bg-muted/50 rounded-md flex items-center justify-center">
-                            <p className="text-muted-foreground">Gráfico de visitas diárias</p>
+                            <p className="text-muted-foreground">Gráfico de conversas iniciadas</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -122,11 +122,11 @@ export default function AdminDashboard() {
             </div>
              <Card>
                 <CardHeader>
-                    <CardTitle>Pontos de Desistência</CardTitle>
+                    <CardTitle>Pontos de Desistência na Conversa</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="h-40 w-full bg-muted/50 rounded-md flex items-center justify-center">
-                        <p className="text-muted-foreground">Etapas onde os usuários saíram do quiz</p>
+                        <p className="text-muted-foreground">Etapas onde os usuários saíram da conversa</p>
                     </div>
                 </CardContent>
             </Card>

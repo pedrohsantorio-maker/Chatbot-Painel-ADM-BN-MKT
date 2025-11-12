@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Users, CheckCircle, MousePointerClick, TrendingUp, Hourglass } from 'lucide-react';
+import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp, Hourglass } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 
 export default function StatCards() {
@@ -9,39 +9,39 @@ export default function StatCards() {
 
   const stats = [
     {
-      title: "Total de Visitantes",
+      title: "Leads Totais",
       value: "0",
       icon: <Users className="h-4 w-4 text-muted-foreground" />,
-      description: "Sem alteração"
+      description: "Total de pessoas que iniciaram"
     },
     {
-      title: "Conclusões do Quiz",
+      title: "Mensagens Trocadas",
+      value: "0",
+      icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
+      description: "Usuário + Bot"
+    },
+    {
+      title: "Conversas Concluídas",
       value: "0",
       icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
-      description: "Sem alteração"
+      description: "Chegaram à última etapa"
     },
     {
-      title: "Cliques no Checkout",
-      value: "0",
-      icon: <MousePointerClick className="h-4 w-4 text-muted-foreground" />,
-      description: "Sem alteração"
+        title: "Conversas Abandonadas",
+        value: "0",
+        icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
+        description: "Saíram antes de concluir"
     },
     {
-      title: "Taxa de Conversão",
+      title: "Taxa de Conclusão",
       value: "0.00%",
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-      description: "Sem alteração"
+      description: "(Concluídas / Iniciadas)"
     },
-    {
-      title: "Tempo Médio Concluído",
-      value: "0.00 min",
-      icon: <Hourglass className="h-4 w-4 text-muted-foreground" />,
-      description: "Sem alteração"
-    }
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {stats.map((stat, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
