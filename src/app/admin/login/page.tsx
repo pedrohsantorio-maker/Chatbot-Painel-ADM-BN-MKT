@@ -6,7 +6,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) return; // Guard clause if Firebase services are not ready
+    if (!auth || !firestore) return;
 
     setIsLoggingIn(true);
 
@@ -51,7 +51,8 @@ export default function LoginPage() {
       });
       router.push('/admin/dashboard');
     } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+        // Attempt to create a new admin user if the user does not exist
         try {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
@@ -60,10 +61,11 @@ export default function LoginPage() {
           );
           const newUser = userCredential.user;
 
+          // Set the admin role in Firestore
           const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
           await setDoc(adminRoleRef, {
             email: newUser.email,
-            createdAt: new Date(),
+            createdAt: serverTimestamp(),
           });
           
           toast({
@@ -82,6 +84,7 @@ export default function LoginPage() {
           });
         }
       } else {
+        // Handle other login errors (e.g., wrong password)
         toast({
           variant: 'destructive',
           title: 'Falha no login',
@@ -93,11 +96,16 @@ export default function LoginPage() {
     }
   };
 
+  // While checking auth state, show a loading screen
   if (isUserLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
   
-  // Render login form if user is not logged in
+  // If user is logged in, this will be handled by useEffect redirect, but as a fallback, don't render the form.
+  if (user) {
+    return <div className="flex h-screen w-full items-center justify-center bg-background">Redirecionando...</div>;
+  }
+
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
@@ -118,6 +126,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoggingIn}
               />
             </div>
             <div className="grid gap-2">
@@ -128,9 +137,10 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoggingIn}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoggingIn || isUserLoading}>
+            <Button type="submit" className="w-full" disabled={isLoggingIn}>
               {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
