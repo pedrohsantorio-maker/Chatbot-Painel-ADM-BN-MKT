@@ -1,81 +1,68 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, MessageSquare } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Users, CheckCircle, MousePointerClick, TrendingUp, Hourglass } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 
 export default function StatCards() {
-  const firestore = useFirestore();
-  const usersCollectionRef = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const { data: users, isLoading: usersLoading } = useCollection(usersCollectionRef);
+  const isLoading = false; // Placeholder for future data fetching state
 
-  const [totalMessages, setTotalMessages] = useState(0);
-  const [messagesLoading, setMessagesLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchMessageCounts() {
-      if (!firestore || !users) {
-        if (!usersLoading) {
-            setMessagesLoading(false);
-        }
-        return;
-      }
-      
-      setMessagesLoading(true);
-      let messageCount = 0;
-      
-      try {
-        for (const user of users) {
-          const messagesRef = collection(firestore, `users/${user.id}/chat_messages`);
-          const messagesSnapshot = await getDocs(query(messagesRef));
-          messageCount += messagesSnapshot.size;
-        }
-        setTotalMessages(messageCount);
-      } catch (error) {
-        console.error("Failed to fetch message counts:", error);
-      } finally {
-        setMessagesLoading(false);
-      }
+  const stats = [
+    {
+      title: "Total de Visitantes",
+      value: "0",
+      icon: <Users className="h-4 w-4 text-muted-foreground" />,
+      description: "Sem alteração"
+    },
+    {
+      title: "Conclusões do Quiz",
+      value: "0",
+      icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
+      description: "Sem alteração"
+    },
+    {
+      title: "Cliques no Checkout",
+      value: "0",
+      icon: <MousePointerClick className="h-4 w-4 text-muted-foreground" />,
+      description: "Sem alteração"
+    },
+    {
+      title: "Taxa de Conversão",
+      value: "0.00%",
+      icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+      description: "Sem alteração"
+    },
+    {
+      title: "Tempo Médio Concluído",
+      value: "0.00 min",
+      icon: <Hourglass className="h-4 w-4 text-muted-foreground" />,
+      description: "Sem alteração"
     }
-
-    fetchMessageCounts();
-  }, [firestore, users, usersLoading]);
-
-  const totalUsers = users?.length ?? 0;
+  ];
 
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {usersLoading ? (
-            <Skeleton className="h-8 w-1/4" />
-          ) : (
-            <div className="text-2xl font-bold">{totalUsers}</div>
-          )}
-          <p className="text-xs text-muted-foreground">Usuários únicos que iniciaram o chat.</p>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total de Mensagens</CardTitle>
-          <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          {messagesLoading ? (
-            <Skeleton className="h-8 w-1/4" />
-          ) : (
-            <div className="text-2xl font-bold">{totalMessages}</div>
-          )}
-          <p className="text-xs text-muted-foreground">Soma de todas as mensagens trocadas.</p>
-        </CardContent>
-      </Card>
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      {stats.map((stat, index) => (
+        <Card key={index}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+            {stat.icon}
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <>
+                <Skeleton className="h-8 w-1/2 mb-1" />
+                <Skeleton className="h-4 w-3/4" />
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }

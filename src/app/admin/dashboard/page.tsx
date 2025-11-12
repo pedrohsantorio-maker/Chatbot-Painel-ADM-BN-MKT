@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { BarChart, MessageSquare, Users } from 'lucide-react';
+import { BarChart, MessageSquare, Users, Calendar, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatCards from '@/components/admin/StatCards';
 import { useAuth } from '@/firebase';
 import Link from 'next/link';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -52,22 +53,20 @@ export default function AdminDashboard() {
               <SidebarMenuButton isActive asChild>
                 <Link href="/admin/dashboard">
                     <BarChart />
-                    <span>Dashboard</span>
+                    <span>Visão Geral</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton>
                 <MessageSquare />
-                <span>Conversas</span>
+                <span>Leads do Dia</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                 <Link href="/admin/users">
-                    <Users />
-                    <span>Usuários</span>
-                </Link>
+              <SidebarMenuButton>
+                <Users />
+                <span>Gerenciar Quiz</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -79,14 +78,56 @@ export default function AdminDashboard() {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center justify-between border-b bg-background p-4">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b bg-background p-4">
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
-             <h1 className="text-2xl font-bold">Dashboard</h1>
+             <h1 className="text-2xl font-bold">Painel de Admin</h1>
+          </div>
+           <div className="flex items-center gap-2">
+            <Button variant="outline">Hoje</Button>
+            <Button variant="ghost">Ontem</Button>
+            <Button variant="ghost">7 dias</Button>
+            <Button variant="ghost">30 dias</Button>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>Período</span>
+            </Button>
           </div>
         </header>
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 space-y-6">
             <StatCards />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Visitas Diárias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-80 w-full bg-muted/50 rounded-md flex items-center justify-center">
+                            <p className="text-muted-foreground">Gráfico de visitas diárias</p>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Origem do Tráfego</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-80 w-full bg-muted/50 rounded-md flex items-center justify-center">
+                            <p className="text-muted-foreground">Gráfico de origem do tráfego</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>Pontos de Desistência</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-40 w-full bg-muted/50 rounded-md flex items-center justify-center">
+                        <p className="text-muted-foreground">Etapas onde os usuários saíram do quiz</p>
+                    </div>
+                </CardContent>
+            </Card>
         </main>
       </SidebarInset>
     </SidebarProvider>

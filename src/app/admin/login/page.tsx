@@ -31,7 +31,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      // Simple check if user is logged in, admin role will be checked on dashboard
       router.push('/admin/dashboard');
     }
   }, [user, isUserLoading, router]);
@@ -40,12 +39,9 @@ export default function LoginPage() {
     e.preventDefault();
 
     try {
-      // Try to sign in first
       await signInWithEmailAndPassword(auth, email, password);
-      // On successful login, the useEffect will redirect to dashboard
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
-        // If user does not exist, create a new account
         try {
           const userCredential = await createUserWithEmailAndPassword(
             auth,
@@ -54,7 +50,6 @@ export default function LoginPage() {
           );
           const newUser = userCredential.user;
 
-          // Add user to the admin roles collection in Firestore
           if (firestore && newUser) {
             const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
             await setDoc(adminRoleRef, {
@@ -67,7 +62,6 @@ export default function LoginPage() {
                 'Sua conta foi criada e você tem privilégios de administrador.',
             });
           }
-          // The useEffect will handle redirection after state change
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
@@ -78,7 +72,6 @@ export default function LoginPage() {
           });
         }
       } else {
-        // Handle other login errors
         toast({
           variant: 'destructive',
           title: 'Falha no login',
@@ -88,8 +81,6 @@ export default function LoginPage() {
     }
   };
 
-  // The loading and logged-in state is handled by the redirect in useEffect.
-  // Rendering a consistent component on both server and client avoids hydration errors.
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
