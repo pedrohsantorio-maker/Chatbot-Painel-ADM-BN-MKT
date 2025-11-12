@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -59,7 +59,7 @@ export function useChat() {
     }
   }, [user, isUserLoading, auth]);
 
-  const addMessageToFirestore = async (message: Omit<Message, 'id'>) => {
+  const addMessageToFirestore = useCallback(async (message: Omit<Message, 'id'>) => {
     if (!user || !firestore) return;
     const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
     
@@ -81,10 +81,10 @@ export function useChat() {
         description: "Não foi possível enviar a mensagem. Verifique sua conexão.",
       });
     }
-  };
+  }, [user, firestore, toast]);
 
   
-  const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
+  const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     const messageWithClientTimestamp = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
     if (message.sender === 'user') {
       setIsSending(true);
@@ -93,9 +93,9 @@ export function useChat() {
     } else {
        addMessageToFirestore(messageWithClientTimestamp);
     }
-  };
+  }, [addMessageToFirestore]);
   
-  const botReply = (text: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
+  const botReply = useCallback((text: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
     setIsTyping(true);
     setSuggestions([]);
     return new Promise<void>(resolve => {
@@ -111,9 +111,9 @@ export function useChat() {
           resolve();
         }, delay);
     });
-  };
+  }, [addMessage]);
 
-  const botMediaReply = (type: 'image' | 'audio' | 'link', mediaUrl: string, text?: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
+  const botMediaReply = useCallback((type: 'image' | 'audio' | 'link', mediaUrl: string, text?: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
     setIsTyping(true);
     setSuggestions([]);
     return new Promise<void>(resolve => {
@@ -133,7 +133,7 @@ export function useChat() {
           resolve();
         }, delay);
     });
-  }
+  }, [addMessage]);
 
 
   useEffect(() => {
@@ -147,44 +147,30 @@ export function useChat() {
       });
     } else {
         // Re-establish flow state from the last message
-        const lastMessage = messages[messages.length - 1];
         const lastBotMessage = [...messages].reverse().find(m => m.sender === 'bot');
 
         if(lastBotMessage?.suggestions && lastBotMessage.suggestions.length > 0) {
             setSuggestions(lastBotMessage.suggestions);
         }
         
-        // This is a simplified logic. A more robust solution would be to save the stage itself.
-        if (lastMessage.sender === 'bot') {
-           if(lastMessage.text?.includes("o que você me diz?")){
-             setStage('awaiting_final_confirmation');
-           } else if (lastMessage.text?.includes("Estou te esperando")){
-             setStage('end');
-           }
-           // ... add more rules to determine stage from message content
-        }
+        let currentStage: ConversationStage = 'start';
+        if (lastBotMessage?.text?.includes("como você tá?")) currentStage = 'awaiting_first_response';
+        else if (lastBotMessage?.text?.includes("presentinho?")) currentStage = 'awaiting_gift_response';
+        else if (lastBotMessage?.text?.includes("gostou?")) currentStage = 'awaiting_like_response';
+        else if (lastBotMessage?.text?.includes("quer mais?")) currentStage = 'awaiting_more_response';
+        else if (lastBotMessage?.text?.includes("inteirinha pra você?")) currentStage = 'awaiting_final_confirmation';
+        else if (lastBotMessage?.text?.includes("Estou te esperando")) currentStage = 'end';
+        setStage(currentStage);
     }
-  }, [messages, messagesLoading]);
+  }, [messages, messagesLoading, botReply]);
 
   const handleUserMessage = async (text: string) => {
     if (text === '(Livre digitação)') return;
     addMessage({ sender: 'user', text, type: 'text' });
     setSuggestions([]);
-    
-    // Determine the current stage from the last message if not already set by botReply
-    const lastBotMessage = messages?.slice().reverse().find(m => m.sender === 'bot');
-    let currentStage = stage;
-    if (lastBotMessage?.text?.includes("como você tá?")) currentStage = 'awaiting_first_response';
-    else if (lastBotMessage?.text?.includes("presentinho?")) currentStage = 'awaiting_gift_response';
-    else if (lastBotMessage?.text?.includes("gostou?")) currentStage = 'awaiting_like_response';
-    else if (lastBotMessage?.text?.includes("quer mais?")) currentStage = 'awaiting_more_response';
-    else if (lastBotMessage?.text?.includes("inteirinha pra você?")) currentStage = 'awaiting_final_confirmation';
-    else if (lastBotMessage?.text?.includes("Estou te esperando")) currentStage = 'end';
 
-
-    switch (currentStage) {
+    switch (stage) {
       case 'awaiting_first_response':
-        setIsTyping(true);
         await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…", 1500);
         await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", 2000, { newStage: 'awaiting_gift_response', suggestions: ['(Livre digitação)'] });
         break;
@@ -236,7 +222,6 @@ export function useChat() {
       case 'awaiting_final_confirmation':
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
-            setIsTyping(true);
             await botMediaReply('link', 'https://firebase.google.com/', undefined, 2000); // Placeholder Link
             await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, { newStage: 'end' });
         } else {
