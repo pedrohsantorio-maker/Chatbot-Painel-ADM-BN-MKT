@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import {
   signInWithEmailAndPassword,
@@ -28,9 +28,19 @@ export default function LoginPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (!isUserLoading && user) {
+      router.push('/admin/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || !firestore) return; // Guard clause if Firebase services are not ready
+
     setIsLoggingIn(true);
 
     try {
@@ -50,33 +60,32 @@ export default function LoginPage() {
           );
           const newUser = userCredential.user;
 
-          if (firestore && newUser) {
-            const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
-            await setDoc(adminRoleRef, {
-              email: newUser.email,
-              createdAt: new Date(),
-            });
-            toast({
-              title: 'Conta de Administrador Criada',
-              description:
-                'Sua conta foi criada e você tem privilégios de administrador.',
-            });
-            router.push('/admin/dashboard');
-          }
+          const adminRoleRef = doc(firestore, 'roles_admin', newUser.uid);
+          await setDoc(adminRoleRef, {
+            email: newUser.email,
+            createdAt: new Date(),
+          });
+          
+          toast({
+            title: 'Conta de Administrador Criada',
+            description:
+              'Sua conta foi criada e você tem privilégios de administrador.',
+          });
+          router.push('/admin/dashboard');
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
             title: 'Falha na Criação da Conta',
             description:
               creationError.message ||
-              'Não foi possível criar la conta de administrador.',
+              'Não foi possível criar a conta de administrador.',
           });
         }
       } else {
         toast({
           variant: 'destructive',
           title: 'Falha no login',
-          description: 'Email ou senha inválidos. Tente novamente.',
+          description: error.message || 'Email ou senha inválidos. Tente novamente.',
         });
       }
     } finally {
@@ -84,6 +93,11 @@ export default function LoginPage() {
     }
   };
 
+  if (isUserLoading) {
+    return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
+  }
+  
+  // Render login form if user is not logged in
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
@@ -116,7 +130,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoggingIn}>
+            <Button type="submit" className="w-full" disabled={isLoggingIn || isUserLoading}>
               {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
