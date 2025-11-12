@@ -93,14 +93,8 @@ export default function LoginPage() {
     // Don't set isLoading to false here, redirection or a final toast will happen
   };
 
-  if (isUserLoading || user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        Carregando...
-      </div>
-    );
-  }
-
+  // The loading and logged-in state is handled by the redirect in useEffect.
+  // Rendering a consistent component on both server and client avoids hydration errors.
   return (
     <main className="flex h-screen w-full items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
@@ -133,8 +127,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
+              {isLoading || isUserLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>
