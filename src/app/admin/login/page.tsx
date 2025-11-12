@@ -23,7 +23,6 @@ import { useToast } from '@/components/ui/use-toast';
 export default function LoginPage() {
   const [email, setEmail] = useState('ghostzero355@gmail.com');
   const [password, setPassword] = useState('Senha123!');
-  const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
@@ -39,7 +38,6 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
     try {
       // Try to sign in first
@@ -78,7 +76,6 @@ export default function LoginPage() {
               creationError.message ||
               'Não foi possível criar a conta de administrador.',
           });
-          setIsLoading(false);
         }
       } else {
         // Handle other login errors
@@ -87,10 +84,8 @@ export default function LoginPage() {
           title: 'Falha no login',
           description: 'Email ou senha inválidos. Tente novamente.',
         });
-        setIsLoading(false);
       }
     }
-    // Don't set isLoading to false here, redirection or a final toast will happen
   };
 
   // The loading and logged-in state is handled by the redirect in useEffect.
@@ -127,8 +122,8 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading || isUserLoading}>
-              {isLoading || isUserLoading ? 'Entrando...' : 'Entrar'}
+            <Button type="submit" className="w-full" disabled={isUserLoading}>
+              {isUserLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>
