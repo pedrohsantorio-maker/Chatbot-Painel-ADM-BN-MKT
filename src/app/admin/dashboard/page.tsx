@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { BarChart, MessageSquare, Users, Calendar, Filter } from 'lucide-react';
+import { BarChart, MessageSquare, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatCards from '@/components/admin/StatCards';
 import { useAuth } from '@/firebase';

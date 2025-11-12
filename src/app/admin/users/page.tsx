@@ -52,21 +52,21 @@ export default function AdminUsersPage() {
               <SidebarMenuButton asChild>
                 <Link href="/admin/dashboard">
                     <BarChart />
-                    <span>Dashboard</span>
+                    <span>Visão Geral</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton>
                 <MessageSquare />
-                <span>Conversas</span>
+                <span>Leads do Dia</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton isActive asChild>
                  <Link href="/admin/users">
                     <Users />
-                    <span>Usuários</span>
+                    <span>Gerenciar Quiz</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
         <header className="flex items-center justify-between border-b bg-background p-4">
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
-             <h1 className="text-2xl font-bold">Usuários</h1>
+             <h1 className="text-2xl font-bold">Gerenciar Quiz</h1>
           </div>
         </header>
         <main className="p-4 md:p-6">
