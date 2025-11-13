@@ -22,22 +22,22 @@ export default function StatCards() {
         description: "Novos leads nas últimas 24h"
     },
     {
-      title: "Mensagens Trocadas",
-      value: stats.totalMessages,
-      icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
-      description: "Usuário + Bot"
-    },
-    {
       title: "Conversas Concluídas",
       value: stats.completedConversations,
-      icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
-      description: "Chegaram à última etapa"
+      icon: <CheckCircle className="h-4 w-4 text-green-500" />,
+      description: "Usuários que clicaram no link final"
     },
     {
-      title: "Taxa de Conclusão",
-      value: `${stats.completionRate.toFixed(2)}%`,
+      title: "Conversas Abandonadas",
+      value: stats.abandonedConversations,
+      icon: <XCircle className="h-4 w-4 text-red-500" />,
+      description: "Usuários que não concluíram o fluxo"
+    },
+    {
+      title: "Taxa de Conversão",
+      value: `${stats.completionRate.toFixed(1)}%`,
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
-      description: "(Concluídas / Iniciadas)"
+      description: "Percentual de leads que concluíram"
     },
   ];
 
