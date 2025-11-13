@@ -6,7 +6,8 @@ import { Wand2, Lightbulb, BarChart, AlertTriangle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { analyzeConversation, AnalyzeConversationOutput, AnalyzeConversationInput } from '@/ai/flows/analyze-conversation-flow';
+import { analyzeConversation } from '@/ai/flows/analyze-conversation-flow';
+import type { AnalyzeConversationOutput, AnalyzeConversationInput } from '@/ai/flows/schemas';
 import { Message, UserDetails } from '@/lib/types';
 import { Timestamp } from 'firebase/firestore';
 
