@@ -9,7 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogTrigger,
-  DialogOverlay,
+  DialogTitle,
   DialogClose
 } from "@/components/ui/dialog";
 import Image from 'next/image';
@@ -48,6 +48,7 @@ export default function ChatHeader() {
           </div>
         </div>
         <DialogContent className="bg-transparent border-none shadow-none p-0 w-auto max-w-[90vw] sm:max-w-lg">
+            <DialogTitle className="sr-only">Avatar de Ster</DialogTitle>
             {avatarImage && (
               <div className="relative">
                 <Image
