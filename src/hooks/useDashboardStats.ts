@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, getDocs, query, where, Timestamp } from 'firebase/firestore';
-import type { Message } from '@/lib/types';
+import { useFirestore } from '@/firebase';
+import { collection, collectionGroup, getDocs } from 'firebase/firestore';
 
 interface Stats {
   totalLeads: number;
@@ -11,6 +10,14 @@ interface Stats {
   completedConversations: number;
   abandonedConversations: number;
   completionRate: number;
+}
+
+interface ChatMessage {
+    id: string;
+    ref: {
+        path: string;
+    };
+    type?: string;
 }
 
 export function useDashboardStats() {
@@ -35,38 +42,26 @@ export function useDashboardStats() {
         const usersCollectionRef = collection(firestore, 'users');
         const usersSnapshot = await getDocs(usersCollectionRef);
         const totalLeads = usersSnapshot.size;
-        const userIds = usersSnapshot.docs.map(doc => doc.id);
 
-        // 2. Get total messages
+        // 2. Get all messages
         const messagesCollectionGroup = collectionGroup(firestore, 'chat_messages');
         const messagesSnapshot = await getDocs(messagesCollectionGroup);
         const totalMessages = messagesSnapshot.size;
+        const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() }));
 
-        // 3. Get completed conversations
-        let completedConversations = 0;
-        if (userIds.length > 0) {
-            const completedUserIds = new Set<string>();
-
-            // This query is now simpler and does not require a composite index.
-            // Since only the bot sends 'link' type messages, the result is the same.
-            const q = query(
-                messagesCollectionGroup,
-                where('type', '==', 'link')
-            );
-
-            const completedSnapshot = await getDocs(q);
-            
-            completedSnapshot.forEach(doc => {
-                // path is like users/{userId}/chat_messages/{messageId}
-                const pathParts = doc.ref.path.split('/');
-                if (pathParts.length >= 2) {
+        // 3. Manually calculate completed conversations from all messages
+        const completedUserIds = new Set<string>();
+        allMessages.forEach(message => {
+            if (message.type === 'link') {
+                // Path is like users/{userId}/chat_messages/{messageId}
+                const pathParts = message.ref.path.split('/');
+                if (pathParts.length >= 2 && pathParts[0] === 'users') {
                     completedUserIds.add(pathParts[1]);
                 }
-            });
-            completedConversations = completedUserIds.size;
-        }
-
-
+            }
+        });
+        const completedConversations = completedUserIds.size;
+        
         // 4. Calculate abandoned and completion rate
         const abandonedConversations = totalLeads - completedConversations;
         const completionRate = totalLeads > 0 ? (completedConversations / totalLeads) * 100 : 0;
