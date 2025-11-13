@@ -35,6 +35,18 @@ const formatAudioDuration = (file: File, callback: (duration: string) => void) =
     };
 };
 
+const calculateDelay = (text: string): number => {
+    const words = text.split(' ').length;
+    if (words <= 5) {
+        return Math.random() * 1000 + 1000; // 1-2 seconds
+    }
+    if (words <= 15) {
+        return Math.random() * 2000 + 2000; // 2-4 seconds
+    }
+    return Math.random() * 3000 + 4000; // 4-7 seconds
+};
+
+
 export function useChat() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -75,25 +87,21 @@ export function useChat() {
     if (!user || !firestore) return;
     const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
     
-    // Firestore does not accept 'undefined' fields.
     const messageToSend: any = {
       ...message,
       timestamp: serverTimestamp(),
     };
 
-    // Explicitly delete text if it's a media message other than link
     if (message.type !== 'text' && message.type !== 'link') {
       delete messageToSend.text;
     }
     
-    // Explicitly delete mediaUrl if it's a link message
     if (message.type === 'link') {
       if ('mediaUrl' in messageToSend) {
         delete messageToSend.mediaUrl;
       }
     }
 
-    // Ensure suggestions are not saved with user messages
     if (message.sender === 'user') {
       delete messageToSend.suggestions;
     }
@@ -115,7 +123,6 @@ export function useChat() {
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     if (message.sender === 'user') {
       setIsSending(true);
-      // Let the onSnapshot handle UI updates.
       addMessageToFirestore(message).finally(() => {
           setIsSending(false)
       });
@@ -124,7 +131,8 @@ export function useChat() {
     }
   }, [addMessageToFirestore]);
   
-  const botReply = useCallback((text: string, delay: number = 1000, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
+  const botReply = useCallback((text: string, options: { newStage?: ConversationStage, suggestions?: string[] } = {}) => {
+    const delay = calculateDelay(text);
     setIsTyping(true);
     setSuggestions([]);
     return new Promise<void>(resolve => {
@@ -160,7 +168,7 @@ export function useChat() {
               suggestions: options.suggestions || []
           };
 
-          if (type === 'link' && messagePayload.mediaUrl) {
+          if (type === 'link' && 'mediaUrl' in messagePayload) {
             delete messagePayload.mediaUrl;
           }
           
@@ -179,7 +187,7 @@ export function useChat() {
 
   const startConversation = useCallback(() => {
     flowStarted.current = true;
-    botReply("Oi, gostoso, como você tá?❤", 500, {
+    botReply("Oi, gostoso, como você tá?❤", {
         newStage: 'awaiting_first_response',
         suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
     });
@@ -191,7 +199,6 @@ export function useChat() {
     if (persistentMessages.length === 0) {
        startConversation();
     } else {
-        // Re-establish flow state from the last message
         const lastBotMessage = [...persistentMessages].reverse().find(m => m.sender === 'bot');
 
         if(lastBotMessage?.suggestions && lastBotMessage.suggestions.length > 0) {
@@ -206,20 +213,18 @@ export function useChat() {
         else if (lastBotMessage?.text?.includes("inteirinha pra você?")) currentStage = 'awaiting_final_confirmation';
         else if (lastBotMessage?.text?.includes("Estou te esperando")) currentStage = 'end';
         setStage(currentStage);
-        flowStarted.current = true; // Mark as started to prevent re-triggering
+        flowStarted.current = true;
     }
   }, [persistentMessages, messagesLoading, startConversation]);
 
   const handleRestartChat = useCallback(async () => {
     if (!user || !firestore) return;
     
-    // 1. Show a toast to inform the user
     toast({
       title: "Reiniciando a conversa...",
       description: "Aguarde um momento.",
     });
 
-    // 2. Delete all messages in the subcollection
     const messagesRef = collection(firestore, `users/${user.uid}/chat_messages`);
     const querySnapshot = await getDocs(messagesRef);
     const batch = writeBatch(firestore);
@@ -228,14 +233,10 @@ export function useChat() {
     });
     await batch.commit();
 
-    // 3. Reset client-side state
     setStage('start');
     setSuggestions([]);
     flowStarted.current = false;
     
-    // 4. The useEffect will re-trigger the conversation start
-    // because persistentMessages will become an empty array.
-    // We can also call it directly to be faster.
     startConversation();
 
   }, [user, firestore, toast, startConversation]);
@@ -254,18 +255,18 @@ export function useChat() {
 
     switch (stage) {
       case 'awaiting_first_response':
-        await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…", 1500);
-        await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", 2000, { newStage: 'awaiting_gift_response', suggestions: ['(Livre digitação)'] });
+        await botReply("Vi que você me chamou, safado... quer ver o que tenho de mais quente só pra você? 😈 Tenho fotos e vídeos, tudo bem gostoso, que vai te deixar louco de tesão…");
+        await botReply("E você, meu amor, tem sorte... me chamou bem na hora que tô toda molhadinha de tesão aqui 🥵 Posso te dar um presentinho? 😏", { newStage: 'awaiting_gift_response', suggestions: ['(Livre digitação)'] });
         break;
 
       case 'awaiting_gift_response':
         const negativeResponse = ['não', 'nao', 'agora não', 'depois'].some(w => text.toLowerCase().includes(w));
         if (negativeResponse) {
-           await botReply("Tem certeza que não quer bb😈?", 1000, { suggestions: ['(Livre digitação)']});
+           await botReply("Tem certeza que não quer bb😈?", { suggestions: ['(Livre digitação)']});
         } else {
             const firstImage = PlaceHolderImages.find(img => img.id === 'preview1');
             await botMediaReply('image', firstImage?.imageUrl || '', "só uma prévia do que você pode ter mais, bebê 😈", 1500);
-            await botReply("Acabei de tirar pra você, gostoso, me diz, gostou? 🙈", 1200, { 
+            await botReply("Acabei de tirar pra você, gostoso, me diz, gostou? 🙈", { 
                 newStage: 'awaiting_like_response',
                 suggestions: ['Sim, gostei😈', 'Gostei e muito🔥']
             });
@@ -275,30 +276,30 @@ export function useChat() {
       case 'awaiting_like_response':
         const positiveLike = ['sim', 'gostei', 'claro', 'muito'].some(w => text.toLowerCase().includes(w));
         if (positiveLike) {
-            await botReply("Você gosta né safado, quer ver mais pouquinho? Tô cheia de tesão 😈", 1500);
+            await botReply("Você gosta né safado, quer ver mais pouquinho? Tô cheia de tesão 😈");
             const secondImage = PlaceHolderImages.find(img => img.id === 'preview2');
             await botMediaReply('image', secondImage?.imageUrl || '', "mais uma só pra te deixar ainda mais louco, quer mais?", 2000);
-            await botReply("Gostou assim meu amor? Tá querendo mais ou vai ficar me pedindo até eu ceder de vez? 👀", 1500, { 
+            await botReply("Gostou assim meu amor? Tá querendo mais ou vai ficar me pedindo até eu ceder de vez? 👀", { 
                 newStage: 'awaiting_more_response',
                 suggestions: ['Quero mais safada 😈', 'Quero te ver todinha👀']
             });
         } else {
-           await botReply("Hmm, achei que ia gostar. Quer tentar outra coisa?", 1000, { suggestions: ['(Livre digitação)'] });
+           await botReply("Hmm, achei que ia gostar. Quer tentar outra coisa?", { suggestions: ['(Livre digitação)'] });
         }
         break;
       
       case 'awaiting_more_response':
         const wantsMore = ['quero', 'mais', 'mostra', 'todinha'].some(w => text.toLowerCase().includes(w));
         if (wantsMore) {
-            await botReply("Seu safado, conversar com você tá me deixando toda molhadinha 🥵", 1500);
-            await botReply("Entre nós, bebê… tô adorando conversar com você, já tô doida pra você me ver bem peladinha, gozando bem gostosa só pra você 😈", 2000);
+            await botReply("Seu safado, conversar com você tá me deixando toda molhadinha 🥵");
+            await botReply("Entre nós, bebê… tô adorando conversar com você, já tô doida pra você me ver bem peladinha, gozando bem gostosa só pra você 😈");
             await botMediaReply('audio', 'https://thriving-mermaid-fe7406.netlify.app/AUDIO-2025-11-11-16-42-18.mp3', undefined, 10000);
-            await botReply("E aí, amor, o que você me diz? Tá preparado pra me ter inteirinha pra você? 🔥❤", 1200, {
+            await botReply("E aí, amor, o que você me diz? Tá preparado pra me ter inteirinha pra você? 🔥❤", {
                 newStage: 'awaiting_final_confirmation',
                 suggestions: ['Sim, topo tudo, quero você inteirinha! 😈', 'Claro, tô pronto pra te ter do jeito que você quiser!']
             });
         } else {
-            await botReply("Se não quer mais, tudo bem. Fico te esperando aqui...", 1000, { newStage: 'end' });
+            await botReply("Se não quer mais, tudo bem. Fico te esperando aqui...", { newStage: 'end' });
         }
         break;
 
@@ -306,18 +307,18 @@ export function useChat() {
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
             await botMediaReply('link', 'https://t.me/+QwpT-RSzF_JkOTZh', undefined, 2000);
-            await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, { newStage: 'end' });
+            await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", { newStage: 'end' });
         } else {
-            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", 1000, { newStage: 'end' });
+            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage: 'end' });
         }
         break;
 
       case 'end':
-        botReply("Não não meu amor, agora você terá que ir para o link se quiser me ver peladinha🤭 vamos lá logo gostoso", 1000);
+        botReply("Não não meu amor, agora você terá que ir para o link se quiser me ver peladinha🤭 vamos lá logo gostoso");
         break;
 
-      default: // any unhandled case
-        botReply("Se precisar de mais alguma coisa, é só chamar, gostoso. 😉", 1000);
+      default:
+        botReply("Se precisar de mais alguma coisa, é só chamar, gostoso. 😉");
         break;
     }
   };
@@ -349,9 +350,9 @@ export function useChat() {
         });
     }
 
-    botReply("Uau, que delícia! 🔥 Adorei o que você mandou...", 1500);
+    botReply("Uau, que delícia! 🔥 Adorei o que você mandou...");
   };
 
 
-  return { messages: persistentMessages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
+  return { messages: persistentMessages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending: isSending || isTyping };
 }

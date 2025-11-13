@@ -124,13 +124,13 @@ export default function ChatInput({ text, setText, onSendMessage, onSendMedia, i
           <div className="flex w-full items-center gap-2">
             {audioBlob ? (
                 <>
-                    <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={discardRecording}><Trash2 /></Button>
+                    <Button type="button" size="icon" variant="ghost" className="text-destructive" onClick={discardRecording} disabled={isSending}><Trash2 /></Button>
                     <div className="flex-grow text-center text-sm font-mono">{formatTime(recordingTime)}</div>
-                    <Button type="button" size="icon" onClick={sendAudio} className="bg-primary hover:bg-primary/90 rounded-full flex-shrink-0"><Send /></Button>
+                    <Button type="button" size="icon" onClick={sendAudio} className="bg-primary hover:bg-primary/90 rounded-full flex-shrink-0" disabled={isSending}><Send /></Button>
                 </>
             ) : (
                 <>
-                    <Button type="button" size="icon" variant="destructive" onClick={stopRecording}><Square/></Button>
+                    <Button type="button" size="icon" variant="destructive" onClick={stopRecording} disabled={isSending}><Square/></Button>
                     <div className="flex-grow text-center text-sm text-destructive font-mono animate-pulse">Gravando áudio... {formatTime(recordingTime)}</div>
                 </>
             )}
@@ -140,10 +140,11 @@ export default function ChatInput({ text, setText, onSendMessage, onSendMedia, i
             <div className="relative flex-grow">
               <Input
                 type="text"
-                placeholder="Digite uma mensagem..."
+                placeholder={isSending ? "Digitando..." : "Digite uma mensagem..."}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 className="bg-input rounded-full pl-4 pr-12 h-12"
+                disabled={isSending}
               />
                <Button
                 type="button"
@@ -151,6 +152,7 @@ export default function ChatInput({ text, setText, onSendMessage, onSendMedia, i
                 size="icon"
                 className="rounded-full absolute right-2 top-1/2 -translate-y-1/2"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isSending}
               >
                 <Paperclip className="h-5 w-5 text-muted-foreground" />
               </Button>
@@ -161,13 +163,14 @@ export default function ChatInput({ text, setText, onSendMessage, onSendMedia, i
               className="hidden"
               accept="image/*,video/*"
               onChange={handleFileChange}
+              disabled={isSending}
             />
             {text.trim() ? (
               <Button type="submit" size="icon" disabled={isSending} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-full h-12 w-12 flex-shrink-0">
                 <Send className="h-5 w-5" />
               </Button>
             ) : (
-              <Button type="button" size="icon" onClick={startRecording} className="bg-foreground text-background hover:bg-foreground/90 rounded-full h-12 w-12 flex-shrink-0">
+              <Button type="button" size="icon" onClick={startRecording} className="bg-foreground text-background hover:bg-foreground/90 rounded-full h-12 w-12 flex-shrink-0" disabled={isSending}>
                 <Mic className="h-5 w-5" />
               </Button>
             )}
