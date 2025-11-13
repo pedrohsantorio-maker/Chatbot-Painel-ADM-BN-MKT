@@ -81,22 +81,18 @@ export function useChat() {
       timestamp: serverTimestamp(),
     };
 
+    // Explicitly delete text if it's a media message other than link
     if (message.type !== 'text' && message.type !== 'link') {
       delete messageToSend.text;
     }
     
+    // Explicitly delete mediaUrl if it's a link message
     if (message.type === 'link') {
-        if ('mediaUrl' in messageToSend) {
-            delete messageToSend.mediaUrl;
-        }
+      if ('mediaUrl' in messageToSend) {
+        delete messageToSend.mediaUrl;
+      }
     }
 
-    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video') {
-       if ('mediaUrl' in messageToSend && message.type !== 'link') {
-          delete messageToSend.mediaUrl;
-       }
-    }
-    
     // Ensure suggestions are not saved with user messages
     if (message.sender === 'user') {
       delete messageToSend.suggestions;
@@ -153,7 +149,7 @@ export function useChat() {
         setTimeout(() => {
           let mediaMeta: Message['mediaMeta'] = {};
           if (type === 'audio') {
-              mediaMeta = { duration: '0:05' } // Placeholder duration
+              mediaMeta = { duration: '0:15' } // Placeholder duration
           }
           const messagePayload: Omit<Message, 'id' | 'timestamp'> = {
               sender: 'bot',
@@ -296,7 +292,7 @@ export function useChat() {
         if (wantsMore) {
             await botReply("Seu safado, conversar com você tá me deixando toda molhadinha 🥵", 1500);
             await botReply("Entre nós, bebê… tô adorando conversar com você, já tô doida pra você me ver bem peladinha, gozando bem gostosa só pra você 😈", 2000);
-            await botMediaReply('audio', 'https://thriving-mermaid-fe7406.netlify.app/', undefined, 1500);
+            await botMediaReply('audio', 'https://thriving-mermaid-fe7406.netlify.app/AUDIO-2025-11-11-16-42-18.mp3', undefined, 10000);
             await botReply("E aí, amor, o que você me diz? Tá preparado pra me ter inteirinha pra você? 🔥❤", 1200, {
                 newStage: 'awaiting_final_confirmation',
                 suggestions: ['Sim, topo tudo, quero você inteirinha! 😈', 'Claro, tô pronto pra te ter do jeito que você quiser!']
@@ -339,7 +335,7 @@ export function useChat() {
 
     if (type === 'audio') {
         formatAudioDuration(file, (duration) => {
-            addMessage({ ...commonMessagepart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
+            addMessage({ ...commonMessagePart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
         });
     } else {
          addMessage({ ...commonMessagePart, type });
