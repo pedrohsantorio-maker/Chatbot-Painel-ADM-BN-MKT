@@ -95,7 +95,7 @@ service cloud.firestore {
       allow list: if isOwner(userId) || isAdmin();
       allow create: if isOwner(userId);
       allow update: if false;
-      allow delete: if false;
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
     /**
