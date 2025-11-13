@@ -65,10 +65,12 @@ export default function AdminUsersPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton>
-                <MessageSquare />
-                <span>Conversas</span>
-              </SidebarMenuButton>
+                <SidebarMenuButton asChild>
+                    <Link href="/admin/conversations">
+                        <MessageSquare />
+                        <span>Conversas</span>
+                    </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
