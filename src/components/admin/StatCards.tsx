@@ -1,40 +1,41 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp, Hourglass } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 
 export default function StatCards() {
-  const isLoading = false; // Placeholder for future data fetching state
+  const { stats, isLoading } = useDashboardStats();
 
-  const stats = [
+  const statItems = [
     {
       title: "Leads Totais",
-      value: "0",
+      value: stats.totalLeads,
       icon: <Users className="h-4 w-4 text-muted-foreground" />,
       description: "Total de pessoas que iniciaram"
     },
     {
       title: "Mensagens Trocadas",
-      value: "0",
+      value: stats.totalMessages,
       icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
       description: "Usuário + Bot"
     },
     {
       title: "Conversas Concluídas",
-      value: "0",
+      value: stats.completedConversations,
       icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
       description: "Chegaram à última etapa"
     },
     {
         title: "Conversas Abandonadas",
-        value: "0",
+        value: stats.abandonedConversations,
         icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
         description: "Saíram antes de concluir"
     },
     {
       title: "Taxa de Conclusão",
-      value: "0.00%",
+      value: `${stats.completionRate.toFixed(2)}%`,
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       description: "(Concluídas / Iniciadas)"
     },
@@ -42,7 +43,7 @@ export default function StatCards() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
