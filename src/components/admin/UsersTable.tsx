@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Timestamp } from 'firebase/firestore';
+import { Button } from '../ui/button';
+import Link from 'next/link';
 
 interface UserData {
     id: string;
@@ -38,6 +40,7 @@ export default function UsersTable() {
               <TableHead>ID do Usuário</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Data de Criação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -47,6 +50,7 @@ export default function UsersTable() {
                   <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-full" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-1/2" /></TableCell>
+                  <TableCell><Skeleton className="h-8 w-24 float-right" /></TableCell>
                 </TableRow>
               ))
             ) : users && users.length > 0 ? (
@@ -55,11 +59,18 @@ export default function UsersTable() {
                   <TableCell className="font-mono text-xs">{user.id}</TableCell>
                   <TableCell>{user.email || 'Anônimo'}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button asChild variant="outline" size="sm">
+                        <Link href={`/admin/conversations/${user.id}`}>
+                            Ver Conversa
+                        </Link>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">Nenhum usuário encontrado.</TableCell>
+                <TableCell colSpan={4} className="text-center">Nenhum usuário encontrado.</TableCell>
               </TableRow>
             )}
           </TableBody>
