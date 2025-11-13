@@ -48,7 +48,7 @@ const getStageFromMessage = (message?: string): string => {
 export function useDashboardStats() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const totalLeadsRef = useRef(0);
+  const isFetchedRef = useRef(false);
   const [stats, setStats] = useState<Stats>({
     totalLeads: 0,
     leadsToday: 0,
@@ -61,11 +61,11 @@ export function useDashboardStats() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || isFetchedRef.current) return;
+    isFetchedRef.current = true; // Prevents re-fetching
 
     const fetchStats = async () => {
-      // Don't set loading to true on interval fetches
-      // setIsLoading(true); 
+      setIsLoading(true); 
 
       try {
         // Fetch users and messages concurrently
@@ -78,16 +78,6 @@ export function useDashboardStats() {
         ]);
 
         const totalLeads = usersSnapshot.size;
-
-        // Check for new leads and show notification
-        if (totalLeadsRef.current > 0 && totalLeads > totalLeadsRef.current) {
-            toast({
-                title: "🎉 Novo Lead Capturado!",
-                description: `Um novo usuário iniciou uma conversa. Total de leads: ${totalLeads}`,
-            });
-        }
-        totalLeadsRef.current = totalLeads;
-
 
         const allUsers: UserDetails[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
         
@@ -149,16 +139,19 @@ export function useDashboardStats() {
           usersWithDetails,
         });
 
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching dashboard stats:", error);
+         toast({
+            variant: "destructive",
+            title: "Erro ao buscar dados",
+            description: error.message || 'Não foi possível carregar as estatísticas do painel.',
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchStats(); // Initial fetch
-    const interval = setInterval(fetchStats, 5000); // Fetch every 5 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
+    fetchStats();
 
   }, [firestore, toast]);
 
