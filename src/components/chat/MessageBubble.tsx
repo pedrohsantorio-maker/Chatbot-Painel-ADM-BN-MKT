@@ -43,12 +43,14 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         ) : null;
       case 'link':
          return (
-            <Button asChild variant="secondary" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <a href={message.text} target="_blank" rel="noopener noreferrer">
-                    <Link2 className="mr-2 h-4 w-4" />
-                    Abrir Link
-                </a>
-            </Button>
+            message.text ? (
+              <Button asChild variant="secondary" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <a href={message.text} target="_blank" rel="noopener noreferrer">
+                      <Link2 className="mr-2 h-4 w-4" />
+                      Abrir Link
+                  </a>
+              </Button>
+            ) : null
         );
       case 'image':
         return message.mediaUrl ? (
