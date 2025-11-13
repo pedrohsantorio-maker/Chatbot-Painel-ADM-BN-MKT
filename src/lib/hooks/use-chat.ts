@@ -76,14 +76,17 @@ export function useChat() {
     const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
     
     // Firestore does not accept 'undefined' fields.
-    // Ensure the text field is only included when it has a value.
     const messageToSend: any = {
       ...message,
       timestamp: serverTimestamp(),
     };
 
+    // Clean up fields that should not be in specific message types
     if (message.type !== 'text' && message.type !== 'link') {
       delete messageToSend.text;
+    }
+    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video') {
+        delete messageToSend.mediaUrl;
     }
     
     // Ensure suggestions are not saved with user messages
@@ -144,7 +147,15 @@ export function useChat() {
           if (type === 'audio') {
               mediaMeta = { duration: '0:05' } // Placeholder duration
           }
-          addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions || [] });
+          const messagePayload: Omit<Message, 'id' | 'timestamp'> = {
+              sender: 'bot',
+              type,
+              mediaUrl: type === 'link' ? undefined : mediaUrl,
+              text: type === 'link' ? mediaUrl : text,
+              mediaMeta,
+              suggestions: options.suggestions || []
+          };
+          addMessage(messagePayload);
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -275,7 +286,7 @@ export function useChat() {
 
     if (type === 'audio') {
         formatAudioDuration(file, (duration) => {
-            addMessage({ ...commonMessagePart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
+            addMessage({ ...commonMessagepart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
         });
     } else {
          addMessage({ ...commonMessagePart, type });
