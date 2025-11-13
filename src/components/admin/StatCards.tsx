@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck } from 'lucide-react';
+import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck, Clock } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
@@ -39,10 +39,16 @@ export default function StatCards() {
       icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
       description: "Percentual de leads que concluíram"
     },
+     {
+      title: "Tempo Médio",
+      value: stats.averageConversationTime,
+      icon: <Clock className="h-4 w-4 text-muted-foreground" />,
+      description: "Duração média das conversas"
+    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       {statItems.map((stat, index) => (
         <Card key={index} className="animate-in fade-in-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

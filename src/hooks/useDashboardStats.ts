@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, collectionGroup, getDocs, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/components/ui/use-toast';
+import { differenceInSeconds, intervalToDuration } from 'date-fns';
 
 interface Stats {
   totalLeads: number;
@@ -13,6 +14,7 @@ interface Stats {
   abandonedConversations: number;
   completionRate: number;
   usersWithDetails: UserDetails[];
+  averageConversationTime: string;
 }
 
 interface UserDetails {
@@ -57,18 +59,18 @@ export function useDashboardStats() {
     abandonedConversations: 0,
     completionRate: 0,
     usersWithDetails: [],
+    averageConversationTime: '0m 0s',
   });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!firestore || isFetchedRef.current) return;
-    isFetchedRef.current = true; // Prevents re-fetching
+    isFetchedRef.current = true; 
 
     const fetchStats = async () => {
       setIsLoading(true); 
 
       try {
-        // Fetch users and messages concurrently
         const usersCollectionRef = collection(firestore, 'users');
         const messagesCollectionGroup = collectionGroup(firestore, 'chat_messages');
         
@@ -91,6 +93,13 @@ export function useDashboardStats() {
 
         const totalMessages = messagesSnapshot.size;
         const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() as any }));
+        
+        if (allUsers.length > 0) {
+            toast({
+                title: "🎉 Novo Lead Capturado!",
+                description: `Um novo usuário iniciou a conversa. Total de leads: ${allUsers.length}`,
+            });
+        }
 
         const messagesByUser = new Map<string, ChatMessage[]>();
         allMessages.forEach(message => {
@@ -102,12 +111,24 @@ export function useDashboardStats() {
         });
 
         const completedUserIds = new Set<string>();
+        let totalConversationSeconds = 0;
+        let conversationsWithDuration = 0;
+
         const usersWithDetails = allUsers.map(user => {
             const userMessages = messagesByUser.get(user.id) || [];
-            userMessages.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
-            
-            const lastMessage = userMessages[0];
-            const lastBotMessage = userMessages.find(m => m.sender === 'bot');
+            if (userMessages.length > 0) {
+              userMessages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+              
+              if(userMessages.length > 1) {
+                  const startTime = userMessages[0].timestamp.toDate();
+                  const endTime = userMessages[userMessages.length - 1].timestamp.toDate();
+                  totalConversationSeconds += differenceInSeconds(endTime, startTime);
+                  conversationsWithDuration++;
+              }
+            }
+
+            const lastMessage = userMessages[userMessages.length - 1];
+            const lastBotMessage = [...userMessages].reverse().find(m => m.sender === 'bot');
 
             const hasCompleted = userMessages.some(m => m.type === 'link');
             if (hasCompleted) {
@@ -124,6 +145,10 @@ export function useDashboardStats() {
             const bDate = b.lastInteraction ? (b.lastInteraction as Timestamp).toMillis() : 0;
             return bDate - aDate;
         });
+        
+        const avgSeconds = conversationsWithDuration > 0 ? totalConversationSeconds / conversationsWithDuration : 0;
+        const duration = intervalToDuration({ start: 0, end: avgSeconds * 1000 });
+        const averageConversationTime = `${duration.minutes || 0}m ${duration.seconds || 0}s`;
 
         const completedConversations = completedUserIds.size;
         const abandonedConversations = totalLeads - completedConversations;
@@ -137,6 +162,7 @@ export function useDashboardStats() {
           abandonedConversations,
           completionRate,
           usersWithDetails,
+          averageConversationTime
         });
 
       } catch (error: any) {

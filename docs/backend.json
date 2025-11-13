@@ -189,6 +189,10 @@
         "details": {
           "type": "string",
           "description": "Detailed information about the action."
+        },
+        "averageConversationTime": {
+            "type": "string",
+            "description": "Average conversation time for all users at the moment of the log."
         }
       },
       "required": [
