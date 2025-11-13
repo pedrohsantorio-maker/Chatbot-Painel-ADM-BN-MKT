@@ -62,6 +62,17 @@ service cloud.firestore {
     function isAdmin() {
       return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
+    
+    /**
+     * @description Rules for a collection group query on 'chat_messages'.
+     * @path /{path=**}/chat_messages/{messageId}
+     * @allow (get, list) - Only admins can query across all chat messages.
+     * @principle Restricts broad queries to admins for statistical analysis.
+     */
+    match /{path=**}/chat_messages/{messageId} {
+      allow get, list: if isAdmin();
+    }
+
 
     /**
      * @description Rules for user profiles.
@@ -85,7 +96,7 @@ service cloud.firestore {
      * @path /users/{userId}/chat_messages/{messageId}
      * @allow (create) - Authenticated user can create a chat message for themselves.
      * @allow (get, list) - Authenticated user can get and list their own chat messages.
-     * @allow (update, delete) - User cannot update or delete chat messages once created.
+     * @allow (update, delete) - User can update or delete their own chat messages.
      * @deny (create) - User cannot create a chat message for another user.
      * @deny (get, list) - User cannot get or list another user's chat messages.
      * @principle Enforces document ownership and restricts access to user's own data.
