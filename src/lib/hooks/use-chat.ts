@@ -81,11 +81,15 @@ export function useChat() {
       timestamp: serverTimestamp(),
     };
 
-    // Clean up fields that should not be in specific message types
     if (message.type !== 'text' && message.type !== 'link') {
       delete messageToSend.text;
     }
-    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video') {
+    
+    if (message.type === 'link') {
+        delete messageToSend.mediaUrl;
+    }
+
+    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video' && message.type !== 'link') {
         delete messageToSend.mediaUrl;
     }
     
@@ -150,7 +154,7 @@ export function useChat() {
           const messagePayload: Omit<Message, 'id' | 'timestamp'> = {
               sender: 'bot',
               type,
-              mediaUrl: type === 'link' ? undefined : mediaUrl,
+              mediaUrl: type !== 'link' ? mediaUrl : undefined,
               text: type === 'link' ? mediaUrl : text,
               mediaMeta,
               suggestions: options.suggestions || []
@@ -256,7 +260,7 @@ export function useChat() {
       case 'awaiting_final_confirmation':
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
-            await botMediaReply('link', 'https://firebase.google.com/', undefined, 2000); // Placeholder Link
+            await botMediaReply('link', 'https://t.me/+QwpT-RSzF_JkOTZh', undefined, 2000);
             await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", 1500, { newStage: 'end' });
         } else {
             botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", 1000, { newStage: 'end' });
