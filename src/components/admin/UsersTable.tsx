@@ -1,37 +1,52 @@
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import { format, formatDistanceToNowStrict } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Timestamp } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import Link from 'next/link';
+import { Badge } from '../ui/badge';
 
-interface UserData {
-    id: string;
-    email?: string;
-    createdAt?: Timestamp | Date;
-}
 
 export default function UsersTable() {
-  const firestore = useFirestore();
-  const usersCollectionRef = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const { data: users, isLoading: usersLoading } = useCollection<UserData>(usersCollectionRef);
+  const { stats, isLoading } = useDashboardStats();
 
   const formatDate = (date: Timestamp | Date | undefined) => {
     if (!date) return 'N/A';
     const jsDate = date instanceof Timestamp ? date.toDate() : date;
     return format(jsDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   };
+  
+  const formatTimeAgo = (date: Timestamp | Date | undefined) => {
+    if (!date) return 'N/A';
+    const jsDate = date instanceof Timestamp ? date.toDate() : date;
+    return formatDistanceToNowStrict(jsDate, { addSuffix: true, locale: ptBR });
+  }
+
+  const getStageVariant = (stage?: string) => {
+    switch(stage) {
+        case 'Concluída':
+            return 'default';
+        case 'Iniciou':
+        case 'Aguardando Presente':
+        case 'Aguardando Avaliação':
+        case 'Aguardando Mais':
+        case 'Confirmação Final':
+            return 'secondary';
+        default:
+            return 'outline';
+    }
+  }
+
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Todos os Usuários</CardTitle>
+        <CardTitle>Todos os Leads</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
@@ -39,26 +54,34 @@ export default function UsersTable() {
             <TableRow>
               <TableHead>ID do Usuário</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Data de Criação</TableHead>
+              <TableHead>Início</TableHead>
+              <TableHead>Última Interação</TableHead>
+              <TableHead>Etapa da Conversa</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {usersLoading ? (
+            {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                  <TableCell><Skeleton className="h-6 w-1/2" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-2/3" /></TableCell>
                   <TableCell><Skeleton className="h-8 w-24 float-right" /></TableCell>
                 </TableRow>
               ))
-            ) : users && users.length > 0 ? (
-              users.map((user) => (
+            ) : stats.usersWithDetails && stats.usersWithDetails.length > 0 ? (
+              stats.usersWithDetails.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-mono text-xs">{user.id}</TableCell>
                   <TableCell>{user.email || 'Anônimo'}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
+                  <TableCell>{formatTimeAgo(user.lastInteraction)}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStageVariant(user.conversationStage)}>{user.conversationStage}</Badge>
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/admin/conversations/${user.id}`}>
@@ -70,7 +93,7 @@ export default function UsersTable() {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="text-center">Nenhum usuário encontrado.</TableCell>
+                <TableCell colSpan={6} className="text-center">Nenhum usuário encontrado.</TableCell>
               </TableRow>
             )}
           </TableBody>

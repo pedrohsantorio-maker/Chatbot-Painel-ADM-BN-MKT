@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp } from 'lucide-react';
+import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp, CalendarCheck } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
@@ -16,6 +16,12 @@ export default function StatCards() {
       description: "Total de pessoas que iniciaram"
     },
     {
+        title: "Leads Hoje",
+        value: stats.leadsToday,
+        icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />,
+        description: "Novos leads nas últimas 24h"
+    },
+    {
       title: "Mensagens Trocadas",
       value: stats.totalMessages,
       icon: <MessageSquare className="h-4 w-4 text-muted-foreground" />,
@@ -26,12 +32,6 @@ export default function StatCards() {
       value: stats.completedConversations,
       icon: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
       description: "Chegaram à última etapa"
-    },
-    {
-        title: "Conversas Abandonadas",
-        value: stats.abandonedConversations,
-        icon: <XCircle className="h-4 w-4 text-muted-foreground" />,
-        description: "Saíram antes de concluir"
     },
     {
       title: "Taxa de Conclusão",

@@ -2,14 +2,24 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, collectionGroup, getDocs } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, Timestamp } from 'firebase/firestore';
 
 interface Stats {
   totalLeads: number;
+  leadsToday: number;
   totalMessages: number;
   completedConversations: number;
   abandonedConversations: number;
   completionRate: number;
+  usersWithDetails: UserDetails[];
+}
+
+interface UserDetails {
+    id: string;
+    email?: string;
+    createdAt?: Timestamp | Date;
+    lastInteraction?: Timestamp | Date;
+    conversationStage?: string;
 }
 
 interface ChatMessage {
@@ -17,17 +27,33 @@ interface ChatMessage {
     ref: {
         path: string;
     };
+    text?: string;
     type?: string;
+    sender?: 'bot' | 'user';
+    timestamp: Timestamp;
+}
+
+const getStageFromMessage = (message?: string): string => {
+    if (!message) return 'Iniciada';
+    if (message.includes('como você tá?')) return 'Iniciou';
+    if (message.includes('presentinho?')) return 'Aguardando Presente';
+    if (message.includes('gostou?')) return 'Aguardando Avaliação';
+    if (message.includes('quer mais?')) return 'Aguardando Mais';
+    if (message.includes('inteirinha pra você?')) return 'Confirmação Final';
+    if (message.includes('Estou te esperando')) return 'Concluída';
+    return 'Em Andamento';
 }
 
 export function useDashboardStats() {
   const firestore = useFirestore();
   const [stats, setStats] = useState<Stats>({
     totalLeads: 0,
+    leadsToday: 0,
     totalMessages: 0,
     completedConversations: 0,
     abandonedConversations: 0,
     completionRate: 0,
+    usersWithDetails: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,40 +64,70 @@ export function useDashboardStats() {
       setIsLoading(true);
 
       try {
-        // 1. Get total leads
+        // Fetch users and messages concurrently
         const usersCollectionRef = collection(firestore, 'users');
-        const usersSnapshot = await getDocs(usersCollectionRef);
-        const totalLeads = usersSnapshot.size;
-
-        // 2. Get all messages
         const messagesCollectionGroup = collectionGroup(firestore, 'chat_messages');
-        const messagesSnapshot = await getDocs(messagesCollectionGroup);
-        const totalMessages = messagesSnapshot.size;
-        const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() }));
-
-        // 3. Manually calculate completed conversations from all messages
-        const completedUserIds = new Set<string>();
-        allMessages.forEach(message => {
-            if (message.type === 'link') {
-                // Path is like users/{userId}/chat_messages/{messageId}
-                const pathParts = message.ref.path.split('/');
-                if (pathParts.length >= 2 && pathParts[0] === 'users') {
-                    completedUserIds.add(pathParts[1]);
-                }
-            }
-        });
-        const completedConversations = completedUserIds.size;
         
-        // 4. Calculate abandoned and completion rate
+        const [usersSnapshot, messagesSnapshot] = await Promise.all([
+            getDocs(usersCollectionRef),
+            getDocs(messagesCollectionGroup)
+        ]);
+
+        const totalLeads = usersSnapshot.size;
+        const allUsers: UserDetails[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
+        
+        const now = new Date();
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const leadsToday = allUsers.filter(user => {
+            if (!user.createdAt) return false;
+            const createdAtDate = user.createdAt instanceof Timestamp ? user.createdAt.toDate() : user.createdAt;
+            return createdAtDate > twentyFourHoursAgo;
+        }).length;
+
+        const totalMessages = messagesSnapshot.size;
+        const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() as any }));
+
+        const messagesByUser = new Map<string, ChatMessage[]>();
+        allMessages.forEach(message => {
+            const userId = message.ref.path.split('/')[1];
+            if (!messagesByUser.has(userId)) {
+                messagesByUser.set(userId, []);
+            }
+            messagesByUser.get(userId)!.push(message);
+        });
+
+        const completedUserIds = new Set<string>();
+        const usersWithDetails = allUsers.map(user => {
+            const userMessages = messagesByUser.get(user.id) || [];
+            userMessages.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+            
+            const lastMessage = userMessages[0];
+            const lastBotMessage = userMessages.find(m => m.sender === 'bot');
+
+            const hasCompleted = userMessages.some(m => m.type === 'link');
+            if (hasCompleted) {
+                completedUserIds.add(user.id);
+            }
+
+            return {
+                ...user,
+                lastInteraction: lastMessage?.timestamp,
+                conversationStage: hasCompleted ? 'Concluída' : getStageFromMessage(lastBotMessage?.text),
+            };
+        });
+
+        const completedConversations = completedUserIds.size;
         const abandonedConversations = totalLeads - completedConversations;
         const completionRate = totalLeads > 0 ? (completedConversations / totalLeads) * 100 : 0;
 
         setStats({
           totalLeads,
+          leadsToday,
           totalMessages,
           completedConversations,
           abandonedConversations,
           completionRate,
+          usersWithDetails,
         });
 
       } catch (error) {
@@ -82,9 +138,7 @@ export function useDashboardStats() {
     };
 
     fetchStats();
-    
-    const interval = setInterval(fetchStats, 5000); // Refresh every 5 seconds
-
+    const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
 
   }, [firestore]);
