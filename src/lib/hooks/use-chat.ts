@@ -44,7 +44,7 @@ export function useChat() {
     user && firestore ? query(collection(firestore, `users/${user.uid}/chat_messages`), orderBy('timestamp', 'asc')) : null,
   [user, firestore]);
   
-  const { data: messages, isLoading: messagesLoading } = useCollection<Omit<Message, 'id'>>(messagesCollectionRef);
+  const { data: persistentMessages, isLoading: messagesLoading } = useCollection<Omit<Message, 'id'>>(messagesCollectionRef);
 
   const [isTyping, setIsTyping] = useState(false);
   const [stage, setStage] = useState<ConversationStage>('start');
@@ -55,12 +55,12 @@ export function useChat() {
 
   useEffect(() => {
     const initializeUser = async () => {
-      if (!user && !isUserLoading) {
+      if (!user && !isUserLoading && auth) {
         initiateAnonymousSignIn(auth);
       }
       if (user && firestore) {
-        // Create user document if it doesn't exist
         const userDocRef = doc(firestore, 'users', user.uid);
+        // Set document with merge to avoid overwriting on subsequent logins.
         await setDoc(userDocRef, { 
             id: user.uid,
             email: user.email || null,
@@ -71,11 +71,10 @@ export function useChat() {
     initializeUser();
   }, [user, isUserLoading, auth, firestore]);
 
-  const addMessageToFirestore = useCallback(async (message: Omit<Message, 'id'>) => {
+  const addMessageToFirestore = useCallback(async (message: Omit<Message, 'id' | 'timestamp'>) => {
     if (!user || !firestore) return;
     const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
     
-    // Convert client-side timestamp to server-side timestamp for consistency
     const messageToSend = {
       ...message,
       timestamp: serverTimestamp(),
@@ -97,13 +96,14 @@ export function useChat() {
 
   
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    const messageWithClientTimestamp = { ...message, id: crypto.randomUUID(), timestamp: Date.now() };
     if (message.sender === 'user') {
       setIsSending(true);
-      setTimeout(() => setIsSending(false), 1000);
-      addMessageToFirestore(messageWithClientTimestamp);
+      // Let the onSnapshot handle UI updates.
+      addMessageToFirestore(message).finally(() => {
+          setIsSending(false)
+      });
     } else {
-       addMessageToFirestore(messageWithClientTimestamp);
+       addMessageToFirestore(message);
     }
   }, [addMessageToFirestore]);
   
@@ -112,7 +112,7 @@ export function useChat() {
     setSuggestions([]);
     return new Promise<void>(resolve => {
         setTimeout(() => {
-          addMessage({ sender: 'bot', text, type: 'text', suggestions: options.suggestions });
+          addMessage({ sender: 'bot', text, type: 'text', suggestions: options.suggestions || [] });
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -134,7 +134,7 @@ export function useChat() {
           if (type === 'audio') {
               mediaMeta = { duration: '0:05' } // Placeholder duration
           }
-          addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions });
+          addMessage({ sender: 'bot', type, mediaUrl: type === 'link' ? undefined : mediaUrl, text: type === 'link' ? mediaUrl : text, mediaMeta, suggestions: options.suggestions || [] });
           setIsTyping(false);
           if (options.newStage) {
             setStage(options.newStage);
@@ -149,17 +149,17 @@ export function useChat() {
 
 
   useEffect(() => {
-    if (messagesLoading || !messages || flowStarted.current) return;
+    if (messagesLoading || flowStarted.current) return;
     
-    if (messages.length === 0) {
+    if (persistentMessages && persistentMessages.length === 0) {
       flowStarted.current = true;
       botReply("Oi, gostoso, como você tá?❤", 500, {
           newStage: 'awaiting_first_response',
           suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
       });
-    } else {
+    } else if (persistentMessages) {
         // Re-establish flow state from the last message
-        const lastBotMessage = [...messages].reverse().find(m => m.sender === 'bot');
+        const lastBotMessage = [...persistentMessages].reverse().find(m => m.sender === 'bot');
 
         if(lastBotMessage?.suggestions && lastBotMessage.suggestions.length > 0) {
             setSuggestions(lastBotMessage.suggestions);
@@ -173,8 +173,9 @@ export function useChat() {
         else if (lastBotMessage?.text?.includes("inteirinha pra você?")) currentStage = 'awaiting_final_confirmation';
         else if (lastBotMessage?.text?.includes("Estou te esperando")) currentStage = 'end';
         setStage(currentStage);
+        flowStarted.current = true; // Mark as started to prevent re-triggering
     }
-  }, [messages, messagesLoading, botReply]);
+  }, [persistentMessages, messagesLoading, botReply]);
 
   const handleUserMessage = async (text: string) => {
     if (text === '(Livre digitação)') return;
@@ -282,5 +283,5 @@ export function useChat() {
   };
 
 
-  return { messages: messages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
+  return { messages: persistentMessages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending };
 }
