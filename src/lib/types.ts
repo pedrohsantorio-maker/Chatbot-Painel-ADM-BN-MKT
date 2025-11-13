@@ -14,3 +14,12 @@ export type Message = {
   };
   suggestions?: string[];
 };
+
+
+export interface UserDetails {
+    id: string;
+    email?: string;
+    createdAt?: Timestamp | Date;
+    lastInteraction?: Timestamp | Date;
+    conversationStage?: string;
+}

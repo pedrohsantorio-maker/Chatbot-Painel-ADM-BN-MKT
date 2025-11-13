@@ -2,7 +2,7 @@
 
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { BarChart, MessageSquare, Users, ArrowLeft } from 'lucide-react';
@@ -11,9 +11,12 @@ import { useAuth } from '@/firebase';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { collection, query, orderBy } from 'firebase/firestore';
-import type { Message } from '@/lib/types';
+import type { Message, UserDetails } from '@/lib/types';
 import MessageBubble from '@/components/chat/MessageBubble';
 import { Skeleton } from '@/components/ui/skeleton';
+import ConversationAnalysis from '@/components/admin/ConversationAnalysis';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { doc } from 'firebase/firestore';
 
 export default function AdminConversationDetailsPage() {
   const { user, isUserLoading } = useUser();
@@ -22,6 +25,12 @@ export default function AdminConversationDetailsPage() {
   const params = useParams();
   const userId = params.userId as string;
   const firestore = useFirestore();
+  
+  const userDocRef = useMemoFirebase(() => 
+    firestore && userId ? doc(firestore, 'users', userId) : null,
+  [firestore, userId]);
+  
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<UserDetails>(userDocRef);
 
   const messagesCollectionRef = useMemoFirebase(() => 
     firestore && userId ? query(collection(firestore, `users/${userId}/chat_messages`), orderBy('timestamp', 'asc')) : null,
@@ -42,7 +51,9 @@ export default function AdminConversationDetailsPage() {
     router.push('/admin/login');
   };
 
-  if (isUserLoading) {
+  const isLoading = isUserLoading || isUserDocLoading;
+
+  if (isLoading) {
     return <div className="flex h-screen w-full items-center justify-center bg-background">Carregando...</div>;
   }
 
@@ -108,7 +119,7 @@ export default function AdminConversationDetailsPage() {
              </div>
           </div>
         </header>
-        <main className="p-4 md:p-6 h-[calc(100vh-81px)]">
+        <main className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 md:p-6 h-[calc(100vh-81px)]">
             <Card className="h-full flex flex-col">
                 <CardHeader>
                     <CardTitle>Chat</CardTitle>
@@ -132,6 +143,11 @@ export default function AdminConversationDetailsPage() {
                     </div>
                 </CardContent>
             </Card>
+            <ConversationAnalysis 
+                userId={userId} 
+                user={userData}
+                messages={messages || []} 
+            />
         </main>
       </SidebarInset>
     </SidebarProvider>
