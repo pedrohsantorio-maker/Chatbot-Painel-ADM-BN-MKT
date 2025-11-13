@@ -5,7 +5,7 @@ import type { Message } from '../types';
 import { useToast } from '@/components/ui/use-toast';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useFirestore, useCollection, useAuth, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, setDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, setDoc, doc, getDocs, writeBatch } from 'firebase/firestore';
 import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 
 type ConversationStage = 
@@ -159,6 +159,9 @@ export function useChat() {
               mediaMeta,
               suggestions: options.suggestions || []
           };
+          if (type === 'link') {
+            delete messagePayload.mediaUrl;
+          }
           addMessage(messagePayload);
           setIsTyping(false);
           if (options.newStage) {
@@ -172,17 +175,20 @@ export function useChat() {
     });
   }, [addMessage]);
 
+  const startConversation = useCallback(() => {
+    flowStarted.current = true;
+    botReply("Oi, gostoso, como você tá?❤", 500, {
+        newStage: 'awaiting_first_response',
+        suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
+    });
+  }, [botReply]);
 
   useEffect(() => {
-    if (messagesLoading || flowStarted.current) return;
+    if (messagesLoading || flowStarted.current || !persistentMessages) return;
     
-    if (persistentMessages && persistentMessages.length === 0) {
-      flowStarted.current = true;
-      botReply("Oi, gostoso, como você tá?❤", 500, {
-          newStage: 'awaiting_first_response',
-          suggestions: ['Tudo sim amor, e você, gostosa?', 'Tô bem']
-      });
-    } else if (persistentMessages) {
+    if (persistentMessages.length === 0) {
+       startConversation();
+    } else {
         // Re-establish flow state from the last message
         const lastBotMessage = [...persistentMessages].reverse().find(m => m.sender === 'bot');
 
@@ -200,10 +206,47 @@ export function useChat() {
         setStage(currentStage);
         flowStarted.current = true; // Mark as started to prevent re-triggering
     }
-  }, [persistentMessages, messagesLoading, botReply]);
+  }, [persistentMessages, messagesLoading, startConversation]);
+
+  const handleRestartChat = useCallback(async () => {
+    if (!user || !firestore) return;
+    
+    // 1. Show a toast to inform the user
+    toast({
+      title: "Reiniciando a conversa...",
+      description: "Aguarde um momento.",
+    });
+
+    // 2. Delete all messages in the subcollection
+    const messagesRef = collection(firestore, `users/${user.uid}/chat_messages`);
+    const querySnapshot = await getDocs(messagesRef);
+    const batch = writeBatch(firestore);
+    querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // 3. Reset client-side state
+    setStage('start');
+    setSuggestions([]);
+    flowStarted.current = false;
+    
+    // 4. The useEffect will re-trigger the conversation start
+    // because persistentMessages will become an empty array.
+    // We can also call it directly to be faster.
+    startConversation();
+
+  }, [user, firestore, toast, startConversation]);
+
 
   const handleUserMessage = async (text: string) => {
     if (text === '(Livre digitação)') return;
+    
+    if (text.toLowerCase().trim() === 'reiniciar') {
+      await handleRestartChat();
+      return;
+    }
+
     addMessage({ sender: 'user', text, type: 'text' });
     setSuggestions([]);
 
