@@ -75,12 +75,22 @@ export function useChat() {
     if (!user || !firestore) return;
     const collectionRef = collection(firestore, `users/${user.uid}/chat_messages`);
     
-    const messageToSend = {
+    // Firestore does not accept 'undefined' fields.
+    // Ensure the text field is only included when it has a value.
+    const messageToSend: any = {
       ...message,
       timestamp: serverTimestamp(),
-      // Ensure suggestions are not saved with user messages
-      ...(message.sender === 'user' && { suggestions: [] }),
     };
+
+    if (message.type !== 'text' && message.type !== 'link') {
+      delete messageToSend.text;
+    }
+    
+    // Ensure suggestions are not saved with user messages
+    if (message.sender === 'user') {
+      delete messageToSend.suggestions;
+    }
+
 
     try {
       await addDoc(collectionRef, messageToSend);
