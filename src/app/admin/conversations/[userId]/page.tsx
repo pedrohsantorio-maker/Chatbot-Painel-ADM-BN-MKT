@@ -70,7 +70,7 @@ export default function AdminConversationDetailsPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton isActive asChild>
                  <Link href="/admin/users">
                     <Users />
                     <span>Leads</span>
@@ -78,7 +78,7 @@ export default function AdminConversationDetailsPage() {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton isActive asChild>
+              <SidebarMenuButton asChild>
                 <Link href="/admin/conversations">
                     <MessageSquare />
                     <span>Conversas</span>
@@ -108,7 +108,7 @@ export default function AdminConversationDetailsPage() {
              </div>
           </div>
         </header>
-        <main className="p-4 md:p-6 h-full">
+        <main className="p-4 md:p-6 h-[calc(100vh-81px)]">
             <Card className="h-full flex flex-col">
                 <CardHeader>
                     <CardTitle>Chat</CardTitle>
