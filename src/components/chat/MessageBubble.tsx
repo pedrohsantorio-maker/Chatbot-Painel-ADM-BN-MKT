@@ -39,7 +39,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     switch (message.type) {
       case 'audio':
         return message.mediaUrl ? (
-          <AudioPlayer src={message.mediaUrl} duration={message.mediaMeta?.duration} />
+          <AudioPlayer src={message.mediaUrl} />
         ) : null;
       case 'link':
          return (
@@ -54,8 +54,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         );
       case 'image':
         return message.mediaUrl ? (
-            <div className="relative w-64 h-64 rounded-lg overflow-hidden">
-                 <Image src={message.mediaUrl} alt="Image sent by user" layout="fill" objectFit="cover" />
+            <div className="relative rounded-lg overflow-hidden max-w-xs">
+                 <Image src={message.mediaUrl} alt="Image sent by user" width={500} height={500} objectFit="contain" className="w-full h-auto"/>
                  {message.text && <p className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2 text-sm">{message.text}</p>}
             </div>
         ) : null;
@@ -74,10 +74,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       <div className="flex flex-col gap-1 w-full max-w-md">
         <div
             className={cn(
-            'rounded-3xl px-5 py-3 shadow-md',
+            'rounded-3xl shadow-md',
             isUser
                 ? 'bg-white text-black rounded-br-lg self-end'
-                : 'bg-primary text-primary-foreground rounded-bl-lg self-start'
+                : 'bg-primary text-primary-foreground rounded-bl-lg self-start',
+            message.type !== 'image' && 'px-5 py-3' // No padding for images so they fill the bubble
             )}
         >
             <div className="break-words">{renderContent()}</div>
