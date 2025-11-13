@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, collectionGroup, getDocs, Timestamp } from 'firebase/firestore';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Stats {
   totalLeads: number;
@@ -46,6 +47,8 @@ const getStageFromMessage = (message?: string): string => {
 
 export function useDashboardStats() {
   const firestore = useFirestore();
+  const { toast } = useToast();
+  const totalLeadsRef = useRef(0);
   const [stats, setStats] = useState<Stats>({
     totalLeads: 0,
     leadsToday: 0,
@@ -61,7 +64,8 @@ export function useDashboardStats() {
     if (!firestore) return;
 
     const fetchStats = async () => {
-      setIsLoading(true);
+      // Don't set loading to true on interval fetches
+      // setIsLoading(true); 
 
       try {
         // Fetch users and messages concurrently
@@ -74,6 +78,17 @@ export function useDashboardStats() {
         ]);
 
         const totalLeads = usersSnapshot.size;
+
+        // Check for new leads and show notification
+        if (totalLeadsRef.current > 0 && totalLeads > totalLeadsRef.current) {
+            toast({
+                title: "🎉 Novo Lead Capturado!",
+                description: `Um novo usuário iniciou uma conversa. Total de leads: ${totalLeads}`,
+            });
+        }
+        totalLeadsRef.current = totalLeads;
+
+
         const allUsers: UserDetails[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
         
         const now = new Date();
@@ -114,6 +129,10 @@ export function useDashboardStats() {
                 lastInteraction: lastMessage?.timestamp,
                 conversationStage: hasCompleted ? 'Concluída' : getStageFromMessage(lastBotMessage?.text),
             };
+        }).sort((a, b) => {
+            const aDate = a.lastInteraction ? (a.lastInteraction as Timestamp).toMillis() : 0;
+            const bDate = b.lastInteraction ? (b.lastInteraction as Timestamp).toMillis() : 0;
+            return bDate - aDate;
         });
 
         const completedConversations = completedUserIds.size;
@@ -137,11 +156,11 @@ export function useDashboardStats() {
       }
     };
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000);
-    return () => clearInterval(interval);
+    fetchStats(); // Initial fetch
+    const interval = setInterval(fetchStats, 5000); // Fetch every 5 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
 
-  }, [firestore]);
+  }, [firestore, toast]);
 
   return { stats, isLoading };
 }

@@ -142,16 +142,17 @@ service cloud.firestore {
     /**
      * @description Rules for admin logs, accessible only to admins.
      * @path /admin_logs/{logId}
-     * @allow (get, list, create, update, delete) - Only admins can manage admin logs.
-     * @deny (get, list, create, update, delete) - Non-admins cannot manage admin logs.
-     * @principle Restricts access to admins.
+     * @allow (create) - Only admins can create admin logs.
+     * @allow (get, list) - Only admins can read admin logs.
+     * @deny (update, delete) - Logs are immutable.
+     * @principle Restricts access to admins and ensures log integrity.
      */
     match /admin_logs/{logId} {
       allow get: if isAdmin();
       allow list: if isAdmin();
       allow create: if isAdmin();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**

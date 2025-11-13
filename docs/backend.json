@@ -166,6 +166,11 @@
           "type": "string",
           "description": "Identifier of the admin user who performed the action."
         },
+        "email": {
+          "type": "string",
+          "description": "Email of the admin user.",
+          "format": "email"
+        },
         "timestamp": {
           "type": "string",
           "description": "Timestamp of when the action was performed.",
@@ -173,7 +178,13 @@
         },
         "action": {
           "type": "string",
-          "description": "Description of the action performed (e.g., edited message, deleted user)."
+          "enum": [
+            "ADMIN_LOGIN",
+            "NEW_LEAD",
+            "LINK_CLICK",
+            "MEDIA_UPLOAD"
+          ],
+          "description": "Type of action performed (e.g., admin login, new lead captured)."
         },
         "details": {
           "type": "string",

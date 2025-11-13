@@ -6,8 +6,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   Auth,
+  User,
 } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, Firestore } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, Firestore, addDoc, collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+
+const logAdminLogin = async (firestore: Firestore, user: User) => {
+    try {
+        const logCollection = collection(firestore, 'admin_logs');
+        await addDoc(logCollection, {
+            adminId: user.uid,
+            email: user.email,
+            action: 'ADMIN_LOGIN',
+            timestamp: serverTimestamp(),
+            details: 'Admin successfully logged into the dashboard.'
+        });
+    } catch (error) {
+        console.error("Error logging admin login: ", error);
+        // We don't toast this error as it's a background task
+    }
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('ghostzero355@gmail.com');
@@ -49,11 +66,18 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const handleLoginSuccess = async (user: User) => {
+    if(firestore) {
+        await logAdminLogin(firestore, user);
+    }
+    router.push('/admin/dashboard');
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Double-check services are available before proceeding.
-    if (!firebaseReady) {
+    if (!firebaseReady || !auth || !firestore) {
         toast({
             variant: "destructive",
             title: "Aguarde um momento",
@@ -66,8 +90,8 @@ export default function LoginPage() {
 
     try {
       // Try to sign in first
-      await signInWithEmailAndPassword(auth, email, password);
-      router.push('/admin/dashboard');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      await handleLoginSuccess(userCredential.user);
     } catch (error: any) {
       // If user does not exist, try to create a new admin user
       if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
@@ -90,7 +114,7 @@ export default function LoginPage() {
             title: 'Conta de Administrador Criada',
             description: 'Sua conta foi criada e você tem privilégios de administrador.',
           });
-          router.push('/admin/dashboard');
+          await handleLoginSuccess(newUser);
         } catch (creationError: any) {
           toast({
             variant: 'destructive',
