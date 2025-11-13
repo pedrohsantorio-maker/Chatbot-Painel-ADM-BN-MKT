@@ -5,8 +5,12 @@ import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck, Clock, Wifi } f
 import { Skeleton } from '../ui/skeleton';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
-export default function StatCards() {
-  const { stats, isLoading } = useDashboardStats();
+type StatCardsProps = {
+    selectedDate: Date;
+}
+
+export default function StatCards({ selectedDate }: StatCardsProps) {
+  const { stats, isLoading } = useDashboardStats(selectedDate);
 
   const statItems = [
     {
@@ -16,10 +20,10 @@ export default function StatCards() {
       description: "Total de pessoas que iniciaram"
     },
     {
-        title: "Leads Hoje",
-        value: stats.leadsToday,
+        title: `Leads em ${selectedDate.toLocaleDateString()}`,
+        value: stats.leadsOnDate,
         icon: <CalendarCheck className="h-4 w-4 text-muted-foreground" />,
-        description: "Novos leads nas últimas 24h"
+        description: "Novos leads na data selecionada"
     },
     {
       title: "Leads Online",
@@ -31,7 +35,13 @@ export default function StatCards() {
       title: "Conversas Concluídas",
       value: stats.completedConversations,
       icon: <CheckCircle className="h-4 w-4 text-green-500" />,
-      description: "Usuários que clicaram no link final"
+      description: "Leads que clicaram no link final"
+    },
+     {
+      title: "Conversas Abandonadas",
+      value: stats.abandonedConversations,
+      icon: <XCircle className="h-4 w-4 text-destructive" />,
+      description: "Leads que não finalizaram"
     },
     {
       title: "Taxa de Conversão",
@@ -48,7 +58,7 @@ export default function StatCards() {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
       {statItems.map((stat, index) => (
         <Card key={index} className="animate-in fade-in-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

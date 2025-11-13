@@ -2,20 +2,26 @@
 
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
-import { BarChart, MessageSquare, Users, Calendar } from 'lucide-react';
+import { BarChart, MessageSquare, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatCards from '@/components/admin/StatCards';
 import { useAuth } from '@/firebase';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format, subDays } from 'date-fns';
+import { cn } from '@/lib/utils';
+import UsersTable from '@/components/admin/UsersTable';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -33,6 +39,10 @@ export default function AdminDashboard() {
     }
     router.push('/admin/login');
   };
+
+  const setDateRange = (days: number) => {
+    setSelectedDate(subDays(new Date(), days));
+  }
 
   return (
     <SidebarProvider>
@@ -88,50 +98,38 @@ export default function AdminDashboard() {
              <h1 className="text-2xl font-bold">Painel de Monitoramento – Chatbot</h1>
           </div>
            <div className="flex items-center gap-2">
-            <Button variant="outline">Hoje</Button>
-            <Button variant="ghost">Ontem</Button>
-            <Button variant="ghost">7 dias</Button>
-            <Button variant="ghost">30 dias</Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>Período</span>
-            </Button>
+            <Button variant="outline" onClick={() => setDateRange(0)}>Hoje</Button>
+            <Button variant="ghost" onClick={() => setDateRange(1)}>Ontem</Button>
+            <Button variant="ghost" onClick={() => setDateRange(7)}>7 dias</Button>
+            <Button variant="ghost" onClick={() => setDateRange(30)}>30 dias</Button>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                        "w-[200px] justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                    )}
+                    >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, "dd 'de' MMMM, yyyy")}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
           </div>
         </header>
         <main className="p-4 md:p-6 space-y-6">
-            <StatCards />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Conversas Iniciadas por Dia</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80 w-full bg-muted/50 rounded-md flex items-center justify-center">
-                            <p className="text-muted-foreground">Gráfico de conversas iniciadas</p>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Origem do Tráfego</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="h-80 w-full bg-muted/50 rounded-md flex items-center justify-center">
-                            <p className="text-muted-foreground">Gráfico de origem do tráfego</p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Pontos de Desistência na Conversa</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="h-40 w-full bg-muted/50 rounded-md flex items-center justify-center">
-                        <p className="text-muted-foreground">Etapas onde os usuários saíram da conversa</p>
-                    </div>
-                </CardContent>
-            </Card>
+            <StatCards selectedDate={selectedDate} />
+             <UsersTable selectedDate={selectedDate} />
         </main>
       </SidebarInset>
     </SidebarProvider>

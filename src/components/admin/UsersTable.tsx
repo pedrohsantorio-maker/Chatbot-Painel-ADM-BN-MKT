@@ -6,15 +6,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, writeBatch } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import { useFirestore } from '@/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import { useToast } from '../ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
+type UsersTableProps = {
+    selectedDate: Date;
+}
 
-export default function UsersTable() {
-  const { stats, isLoading } = useDashboardStats();
+export default function UsersTable({ selectedDate }: UsersTableProps) {
+  const { stats, isLoading, refetchStats } = useDashboardStats(selectedDate);
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const formatDate = (date: Timestamp | Date | undefined) => {
     if (!date) return 'N/A';
@@ -50,16 +69,46 @@ export default function UsersTable() {
     }
   }
 
+  const handleDeleteHistory = async (userId: string) => {
+    if (!firestore) return;
+    try {
+      const messagesRef = collection(firestore, `users/${userId}/chat_messages`);
+      const querySnapshot = await getDocs(messagesRef);
+      if (querySnapshot.empty) {
+        toast({ title: "Nenhuma conversa para apagar." });
+        return;
+      }
+      const batch = writeBatch(firestore);
+      querySnapshot.forEach((doc) => {
+          batch.delete(doc.ref);
+      });
+      await batch.commit();
+      toast({
+        title: "Histórico Apagado!",
+        description: `O histórico de mensagens do lead ${userId.substring(0, 5)}... foi apagado.`,
+      });
+      refetchStats(); // Refetch stats after deletion
+    } catch (error: any) {
+      console.error("Error deleting chat history: ", error);
+      toast({
+        variant: 'destructive',
+        title: "Erro ao Apagar",
+        description: "Não foi possível apagar o histórico de conversas.",
+      });
+    }
+  }
+
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Todos os Leads</CardTitle>
+        <CardTitle>Leads do Dia</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Lead do Dia</TableHead>
               <TableHead>ID do Usuário</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Início</TableHead>
@@ -72,6 +121,7 @@ export default function UsersTable() {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
+                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-3/4" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-full" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-full" /></TableCell>
@@ -83,6 +133,7 @@ export default function UsersTable() {
             ) : stats.usersWithDetails && stats.usersWithDetails.length > 0 ? (
               stats.usersWithDetails.map((user) => (
                 <TableRow key={user.id} className="animate-in fade-in-0">
+                  <TableCell className="font-bold">Lead {user.dailyLeadNumber}</TableCell>
                   <TableCell className="font-mono text-xs">{user.id}</TableCell>
                   <TableCell>{user.email || 'Anônimo'}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
@@ -92,18 +143,38 @@ export default function UsersTable() {
                       {user.conversationStage}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-2">
                     <Button asChild variant="outline" size="sm">
                         <Link href={`/admin/conversations/${user.id}`}>
                             Ver Conversa
                         </Link>
                     </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">Apagar Histórico</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso apagará permanentemente
+                            o histórico de conversas deste lead.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteHistory(user.id)}>
+                            Apagar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">Nenhum usuário encontrado.</TableCell>
+                <TableCell colSpan={7} className="text-center">Nenhum usuário encontrado para esta data.</TableCell>
               </TableRow>
             )}
           </TableBody>

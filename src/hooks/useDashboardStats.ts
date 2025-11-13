@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFirestore } from '@/firebase';
 import { collection, collectionGroup, getDocs, Timestamp } from 'firebase/firestore';
 import { useToast } from '@/components/ui/use-toast';
-import { differenceInSeconds, intervalToDuration } from 'date-fns';
+import { differenceInSeconds, intervalToDuration, isSameDay, startOfDay, endOfDay } from 'date-fns';
 
 interface Stats {
   totalLeads: number;
-  leadsToday: number;
+  leadsOnDate: number;
   leadsOnline: number;
   totalMessages: number;
   completedConversations: number;
@@ -24,6 +24,7 @@ interface UserDetails {
     createdAt?: Timestamp | Date;
     lastInteraction?: Timestamp | Date;
     conversationStage?: string;
+    dailyLeadNumber?: number;
 }
 
 interface ChatMessage {
@@ -48,12 +49,12 @@ const getStageFromMessage = (message?: string): string => {
     return 'Em Andamento';
 }
 
-export function useDashboardStats() {
+export function useDashboardStats(selectedDate: Date) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [stats, setStats] = useState<Stats>({
     totalLeads: 0,
-    leadsToday: 0,
+    leadsOnDate: 0,
     leadsOnline: 0,
     totalMessages: 0,
     completedConversations: 0,
@@ -63,12 +64,9 @@ export function useDashboardStats() {
     averageConversationTime: '0m 0s',
   });
   const [isLoading, setIsLoading] = useState(true);
-  const totalLeadsRef = useRef(0);
 
-  useEffect(() => {
-    if (!firestore) return;
-
-    const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
+      if (!firestore) return;
       setIsLoading(true);
 
       try {
@@ -82,23 +80,17 @@ export function useDashboardStats() {
 
         const totalLeads = usersSnapshot.size;
 
-        if (totalLeads > totalLeadsRef.current && totalLeadsRef.current > 0) {
-            toast({
-                title: "🎉 Novo Lead Capturado!",
-                description: `Um novo usuário iniciou a conversa. Total de leads: ${totalLeads}`,
-            });
-        }
-        totalLeadsRef.current = totalLeads;
-
         const allUsers: UserDetails[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
         
         const now = new Date();
-        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const leadsToday = allUsers.filter(user => {
+        const startOfSelectedDate = startOfDay(selectedDate);
+        const endOfSelectedDate = endOfDay(selectedDate);
+
+        const leadsOnDate = allUsers.filter(user => {
             if (!user.createdAt) return false;
             const createdAtDate = user.createdAt instanceof Timestamp ? user.createdAt.toDate() : user.createdAt;
-            return createdAtDate > twentyFourHoursAgo;
-        }).length;
+            return createdAtDate >= startOfSelectedDate && createdAtDate <= endOfSelectedDate;
+        });
 
         const totalMessages = messagesSnapshot.size;
         const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() as any }));
@@ -118,7 +110,17 @@ export function useDashboardStats() {
         let onlineCount = 0;
         const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
-        const usersWithDetails = allUsers.map(user => {
+        const usersForDate = allUsers.filter(user => {
+           if (!user.createdAt) return false;
+           const createdAtDate = user.createdAt instanceof Timestamp ? user.createdAt.toDate() : user.createdAt;
+           return isSameDay(createdAtDate, selectedDate);
+        }).sort((a,b) => {
+            const aDate = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt as Date).getTime();
+            const bDate = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt as Date).getTime();
+            return aDate - bDate;
+        })
+        
+        const usersWithDetails = usersForDate.map((user, index) => {
             const userMessages = messagesByUser.get(user.id) || [];
             let lastInteractionTime: Date | undefined;
 
@@ -148,29 +150,27 @@ export function useDashboardStats() {
                 ...user,
                 lastInteraction: lastInteractionTime,
                 conversationStage: hasCompleted ? 'Concluída' : getStageFromMessage(lastBotMessage?.text),
+                dailyLeadNumber: index + 1
             };
-        }).sort((a, b) => {
-            const aDate = a.lastInteraction ? (a.lastInteraction as Date).getTime() : 0;
-            const bDate = b.lastInteraction ? (b.lastInteraction as Date).getTime() : 0;
-            return bDate - aDate;
         });
         
         const avgSeconds = conversationsWithDuration > 0 ? totalConversationSeconds / conversationsWithDuration : 0;
         const duration = intervalToDuration({ start: 0, end: avgSeconds * 1000 });
         const averageConversationTime = `${duration.minutes || 0}m ${duration.seconds || 0}s`;
 
-        const completedConversations = completedUserIds.size;
-        const abandonedConversations = totalLeads - completedConversations;
-        const completionRate = totalLeads > 0 ? (completedConversations / totalLeads) * 100 : 0;
+        const completedConversationsOnDate = usersWithDetails.filter(u => u.conversationStage === 'Concluída').length;
+        const leadsOnDateCount = usersWithDetails.length;
+        const abandonedConversationsOnDate = leadsOnDateCount - completedConversationsOnDate;
+        const completionRateOnDate = leadsOnDateCount > 0 ? (completedConversationsOnDate / leadsOnDateCount) * 100 : 0;
 
         setStats({
           totalLeads,
-          leadsToday,
+          leadsOnDate: leadsOnDateCount,
           leadsOnline: onlineCount,
           totalMessages,
-          completedConversations,
-          abandonedConversations,
-          completionRate,
+          completedConversations: completedConversationsOnDate,
+          abandonedConversations: abandonedConversationsOnDate,
+          completionRate: completionRateOnDate,
           usersWithDetails,
           averageConversationTime
         });
@@ -185,14 +185,13 @@ export function useDashboardStats() {
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [firestore, toast, selectedDate]);
 
-    fetchStats();
-    const interval = setInterval(fetchStats, 5000); 
-
+  useEffect(() => {
+    const interval = setInterval(() => fetchStats(), 5000); 
+    fetchStats(); // Initial fetch
     return () => clearInterval(interval);
+  }, [fetchStats]);
 
-  }, [firestore, toast]);
-
-  return { stats, isLoading };
+  return { stats, isLoading, refetchStats: fetchStats };
 }

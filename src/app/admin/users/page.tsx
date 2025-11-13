@@ -2,7 +2,7 @@
 
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { signOut } from 'firebase/auth';
 import { SidebarProvider, Sidebar, SidebarTrigger, SidebarInset, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from '@/components/ui/sidebar';
 import { BarChart, MessageSquare, Users } from 'lucide-react';
@@ -15,6 +15,7 @@ export default function AdminUsersPage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const router = useRouter();
+  const [currentDate] = useState(new Date());
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -88,7 +89,7 @@ export default function AdminUsersPage() {
           </div>
         </header>
         <main className="p-4 md:p-6">
-            <UsersTable />
+            <UsersTable selectedDate={currentDate} />
         </main>
       </SidebarInset>
     </SidebarProvider>

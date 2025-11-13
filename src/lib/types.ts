@@ -22,4 +22,5 @@ export interface UserDetails {
     createdAt?: Timestamp | Date;
     lastInteraction?: Timestamp | Date;
     conversationStage?: string;
+    dailyLeadNumber?: number;
 }
