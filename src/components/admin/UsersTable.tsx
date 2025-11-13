@@ -4,12 +4,13 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format, formatDistanceToNowStrict } from 'date-fns';
+import { format, formatDistanceToNowStrict, differenceInSeconds } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Timestamp } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import Link from 'next/link';
 import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 
 export default function UsersTable() {
@@ -24,7 +25,14 @@ export default function UsersTable() {
   const formatTimeAgo = (date: Timestamp | Date | undefined) => {
     if (!date) return 'N/A';
     const jsDate = date instanceof Timestamp ? date.toDate() : date;
-    return formatDistanceToNowStrict(jsDate, { addSuffix: true, locale: ptBR });
+    const isRecent = differenceInSeconds(new Date(), jsDate) < 30;
+
+    return (
+        <div className="flex items-center gap-2">
+            {isRecent && <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>}
+            <span>{formatDistanceToNowStrict(jsDate, { addSuffix: true, locale: ptBR })}</span>
+        </div>
+    )
   }
 
   const getStageVariant = (stage?: string) => {
