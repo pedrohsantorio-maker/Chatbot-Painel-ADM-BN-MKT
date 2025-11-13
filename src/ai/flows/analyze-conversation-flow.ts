@@ -8,7 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 
 // Esquema de entrada para a análise da conversa
 export const AnalyzeConversationInputSchema = z.object({
