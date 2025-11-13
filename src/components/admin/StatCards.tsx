@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, MessageSquare, CheckCircle, XCircle, TrendingUp, CalendarCheck } from 'lucide-react';
+import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
@@ -44,7 +44,7 @@ export default function StatCards() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {statItems.map((stat, index) => (
-        <Card key={index}>
+        <Card key={index} className="animate-in fade-in-0">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
             {stat.icon}

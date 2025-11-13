@@ -35,7 +35,7 @@ export default function UsersTable() {
     )
   }
 
-  const getStageVariant = (stage?: string) => {
+  const getStageVariant = (stage?: string): 'default' | 'secondary' | 'outline' => {
     switch(stage) {
         case 'Concluída':
             return 'default';
@@ -82,13 +82,15 @@ export default function UsersTable() {
               ))
             ) : stats.usersWithDetails && stats.usersWithDetails.length > 0 ? (
               stats.usersWithDetails.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} className="animate-in fade-in-0">
                   <TableCell className="font-mono text-xs">{user.id}</TableCell>
                   <TableCell>{user.email || 'Anônimo'}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
                   <TableCell>{formatTimeAgo(user.lastInteraction)}</TableCell>
                   <TableCell>
-                    <Badge variant={getStageVariant(user.conversationStage)}>{user.conversationStage}</Badge>
+                    <Badge variant={getStageVariant(user.conversationStage)} className={cn(getStageVariant(user.conversationStage) === 'default' && 'bg-green-600/90 text-white')}>
+                      {user.conversationStage}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="outline" size="sm">
