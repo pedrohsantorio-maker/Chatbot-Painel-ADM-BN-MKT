@@ -9,6 +9,7 @@ import { differenceInSeconds, intervalToDuration } from 'date-fns';
 interface Stats {
   totalLeads: number;
   leadsToday: number;
+  leadsOnline: number;
   totalMessages: number;
   completedConversations: number;
   abandonedConversations: number;
@@ -50,10 +51,10 @@ const getStageFromMessage = (message?: string): string => {
 export function useDashboardStats() {
   const firestore = useFirestore();
   const { toast } = useToast();
-  const isFetchedRef = useRef(false);
   const [stats, setStats] = useState<Stats>({
     totalLeads: 0,
     leadsToday: 0,
+    leadsOnline: 0,
     totalMessages: 0,
     completedConversations: 0,
     abandonedConversations: 0,
@@ -62,13 +63,13 @@ export function useDashboardStats() {
     averageConversationTime: '0m 0s',
   });
   const [isLoading, setIsLoading] = useState(true);
+  const totalLeadsRef = useRef(0);
 
   useEffect(() => {
-    if (!firestore || isFetchedRef.current) return;
-    isFetchedRef.current = true; 
+    if (!firestore) return;
 
     const fetchStats = async () => {
-      setIsLoading(true); 
+      setIsLoading(true);
 
       try {
         const usersCollectionRef = collection(firestore, 'users');
@@ -80,6 +81,14 @@ export function useDashboardStats() {
         ]);
 
         const totalLeads = usersSnapshot.size;
+
+        if (totalLeads > totalLeadsRef.current && totalLeadsRef.current > 0) {
+            toast({
+                title: "🎉 Novo Lead Capturado!",
+                description: `Um novo usuário iniciou a conversa. Total de leads: ${totalLeads}`,
+            });
+        }
+        totalLeadsRef.current = totalLeads;
 
         const allUsers: UserDetails[] = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
         
@@ -94,13 +103,6 @@ export function useDashboardStats() {
         const totalMessages = messagesSnapshot.size;
         const allMessages: ChatMessage[] = messagesSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() as any }));
         
-        if (allUsers.length > 0) {
-            toast({
-                title: "🎉 Novo Lead Capturado!",
-                description: `Um novo usuário iniciou a conversa. Total de leads: ${allUsers.length}`,
-            });
-        }
-
         const messagesByUser = new Map<string, ChatMessage[]>();
         allMessages.forEach(message => {
             const userId = message.ref.path.split('/')[1];
@@ -113,21 +115,28 @@ export function useDashboardStats() {
         const completedUserIds = new Set<string>();
         let totalConversationSeconds = 0;
         let conversationsWithDuration = 0;
+        let onlineCount = 0;
+        const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
 
         const usersWithDetails = allUsers.map(user => {
             const userMessages = messagesByUser.get(user.id) || [];
+            let lastInteractionTime: Date | undefined;
+
             if (userMessages.length > 0) {
               userMessages.sort((a, b) => a.timestamp.toMillis() - b.timestamp.toMillis());
+              const firstMessageTime = userMessages[0].timestamp.toDate();
+              const lastMessageTime = userMessages[userMessages.length - 1].timestamp.toDate();
+              lastInteractionTime = lastMessageTime;
               
               if(userMessages.length > 1) {
-                  const startTime = userMessages[0].timestamp.toDate();
-                  const endTime = userMessages[userMessages.length - 1].timestamp.toDate();
-                  totalConversationSeconds += differenceInSeconds(endTime, startTime);
+                  totalConversationSeconds += differenceInSeconds(lastMessageTime, firstMessageTime);
                   conversationsWithDuration++;
               }
+               if (lastInteractionTime > fiveMinutesAgo) {
+                    onlineCount++;
+                }
             }
 
-            const lastMessage = userMessages[userMessages.length - 1];
             const lastBotMessage = [...userMessages].reverse().find(m => m.sender === 'bot');
 
             const hasCompleted = userMessages.some(m => m.type === 'link');
@@ -137,12 +146,12 @@ export function useDashboardStats() {
 
             return {
                 ...user,
-                lastInteraction: lastMessage?.timestamp,
+                lastInteraction: lastInteractionTime,
                 conversationStage: hasCompleted ? 'Concluída' : getStageFromMessage(lastBotMessage?.text),
             };
         }).sort((a, b) => {
-            const aDate = a.lastInteraction ? (a.lastInteraction as Timestamp).toMillis() : 0;
-            const bDate = b.lastInteraction ? (b.lastInteraction as Timestamp).toMillis() : 0;
+            const aDate = a.lastInteraction ? (a.lastInteraction as Date).getTime() : 0;
+            const bDate = b.lastInteraction ? (b.lastInteraction as Date).getTime() : 0;
             return bDate - aDate;
         });
         
@@ -157,6 +166,7 @@ export function useDashboardStats() {
         setStats({
           totalLeads,
           leadsToday,
+          leadsOnline: onlineCount,
           totalMessages,
           completedConversations,
           abandonedConversations,
@@ -178,6 +188,9 @@ export function useDashboardStats() {
     };
 
     fetchStats();
+    const interval = setInterval(fetchStats, 5000); 
+
+    return () => clearInterval(interval);
 
   }, [firestore, toast]);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck, Clock } from 'lucide-react';
+import { Users, CheckCircle, XCircle, TrendingUp, CalendarCheck, Clock, Wifi } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 
@@ -22,16 +22,16 @@ export default function StatCards() {
         description: "Novos leads nas últimas 24h"
     },
     {
+      title: "Leads Online",
+      value: stats.leadsOnline,
+      icon: <Wifi className="h-4 w-4 text-green-500" />,
+      description: "Usuários ativos nos últimos 5 min"
+    },
+    {
       title: "Conversas Concluídas",
       value: stats.completedConversations,
       icon: <CheckCircle className="h-4 w-4 text-green-500" />,
       description: "Usuários que clicaram no link final"
-    },
-    {
-      title: "Conversas Abandonadas",
-      value: stats.abandonedConversations,
-      icon: <XCircle className="h-4 w-4 text-red-500" />,
-      description: "Usuários que não concluíram o fluxo"
     },
     {
       title: "Taxa de Conversão",
