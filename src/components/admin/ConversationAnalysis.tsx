@@ -36,7 +36,7 @@ export default function ConversationAnalysis({ userId, user, messages }: Convers
 
     const input: AnalyzeConversationInput = {
         userId: userId,
-        userEmail: user?.email,
+        userEmail: user?.email || undefined,
         messages: formattedMessages
     }
 
