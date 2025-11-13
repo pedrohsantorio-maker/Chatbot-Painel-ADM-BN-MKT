@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, collectionGroup, getDocs, query, where, Timestamp } from 'firebase/firestore';
@@ -43,32 +45,24 @@ export function useDashboardStats() {
         // 3. Get completed conversations
         let completedConversations = 0;
         if (userIds.length > 0) {
-            // Firestore 'in' query is limited to 30 items. We might need to batch this for > 30 users.
-            // For now, handling up to 30 for simplicity.
-            const userChunks = [];
-            for (let i = 0; i < userIds.length; i += 30) {
-                userChunks.push(userIds.slice(i, i + 30));
-            }
-            
             const completedUserIds = new Set<string>();
 
-            for (const chunk of userChunks) {
-                 const q = query(
-                    messagesCollectionGroup,
-                    where('sender', '==', 'bot'),
-                    where('type', '==', 'link')
-                );
+            // This query is now simpler and does not require a composite index.
+            // Since only the bot sends 'link' type messages, the result is the same.
+            const q = query(
+                messagesCollectionGroup,
+                where('type', '==', 'link')
+            );
 
-                const completedSnapshot = await getDocs(q);
-                
-                completedSnapshot.forEach(doc => {
-                    // path is like users/{userId}/chat_messages/{messageId}
-                    const pathParts = doc.ref.path.split('/');
-                    if (pathParts.length >= 2 && chunk.includes(pathParts[1])) {
-                        completedUserIds.add(pathParts[1]);
-                    }
-                });
-            }
+            const completedSnapshot = await getDocs(q);
+            
+            completedSnapshot.forEach(doc => {
+                // path is like users/{userId}/chat_messages/{messageId}
+                const pathParts = doc.ref.path.split('/');
+                if (pathParts.length >= 2) {
+                    completedUserIds.add(pathParts[1]);
+                }
+            });
             completedConversations = completedUserIds.size;
         }
 
