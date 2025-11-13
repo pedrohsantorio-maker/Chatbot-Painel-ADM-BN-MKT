@@ -86,11 +86,15 @@ export function useChat() {
     }
     
     if (message.type === 'link') {
-        delete messageToSend.mediaUrl;
+        if ('mediaUrl' in messageToSend) {
+            delete messageToSend.mediaUrl;
+        }
     }
 
-    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video' && message.type !== 'link') {
-        delete messageToSend.mediaUrl;
+    if (message.type !== 'image' && message.type !== 'audio' && message.type !== 'video') {
+       if ('mediaUrl' in messageToSend && message.type !== 'link') {
+          delete messageToSend.mediaUrl;
+       }
     }
     
     // Ensure suggestions are not saved with user messages
@@ -159,9 +163,11 @@ export function useChat() {
               mediaMeta,
               suggestions: options.suggestions || []
           };
-          if (type === 'link') {
+
+          if (type === 'link' && messagePayload.mediaUrl) {
             delete messagePayload.mediaUrl;
           }
+          
           addMessage(messagePayload);
           setIsTyping(false);
           if (options.newStage) {
@@ -290,7 +296,7 @@ export function useChat() {
         if (wantsMore) {
             await botReply("Seu safado, conversar com você tá me deixando toda molhadinha 🥵", 1500);
             await botReply("Entre nós, bebê… tô adorando conversar com você, já tô doida pra você me ver bem peladinha, gozando bem gostosa só pra você 😈", 2000);
-            await botMediaReply('audio', '/empathy-audio.mp3', undefined, 1500);
+            await botMediaReply('audio', 'https://thriving-mermaid-fe7406.netlify.app/', undefined, 1500);
             await botReply("E aí, amor, o que você me diz? Tá preparado pra me ter inteirinha pra você? 🔥❤", 1200, {
                 newStage: 'awaiting_final_confirmation',
                 suggestions: ['Sim, topo tudo, quero você inteirinha! 😈', 'Claro, tô pronto pra te ter do jeito que você quiser!']
