@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useRouter }s from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function AdminRootPage() {
