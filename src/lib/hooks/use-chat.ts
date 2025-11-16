@@ -306,7 +306,7 @@ export function useChat() {
       case 'awaiting_final_confirmation':
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
-            await botMediaReply('link', 'https://t.me/+QwpT-RSzF_JkOTZh', undefined, 2000);
+            await botMediaReply('link', 'https://t.me/FerreraSterBOT', undefined, 2000);
             await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", { newStage: 'end' });
         } else {
             botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage: 'end' });
