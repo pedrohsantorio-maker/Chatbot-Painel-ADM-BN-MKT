@@ -306,53 +306,7 @@ export function useChat() {
       case 'awaiting_final_confirmation':
         const finalConfirmation = ['sim', 'topo', 'quero', 'claro', 'pronto'].some(w => text.toLowerCase().includes(w));
         if (finalConfirmation) {
-            await botMediaReply('link', 'https://t.me/FerreraSterBOT', undefined, 2000);
+            await botMediaReply('link', 'https://t.me/Ster_SpicyyBOT', undefined, 2000);
             await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", { newStage: 'end' });
         } else {
-            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage: 'end' });
-        }
-        break;
-
-      case 'end':
-        botReply("Não não meu amor, agora você terá que ir para o link se quiser me ver peladinha🤭 vamos lá logo gostoso");
-        break;
-
-      default:
-        botReply("Se precisar de mais alguma coisa, é só chamar, gostoso. 😉");
-        break;
-    }
-  };
-
-  const sendMediaMessage = (file: File, type: 'audio' | 'image' | 'video') => {
-    const mediaUrl = URL.createObjectURL(file);
-    const commonMessagePart = {
-        sender: 'user' as const,
-        mediaUrl,
-        mediaMeta: {
-            fileName: file.name,
-            fileSize: formatFileSize(file.size),
-        },
-    };
-
-    if (type === 'audio') {
-        formatAudioDuration(file, (duration) => {
-            addMessage({ ...commonMessagePart, type, mediaMeta: { ...commonMessagePart.mediaMeta, duration } });
-        });
-    } else {
-         addMessage({ ...commonMessagePart, type });
-    }
-    
-    if (!navigator.onLine) {
-        toast({
-            variant: "destructive",
-            title: "Serviço temporariamente indisponível",
-            description: "Você parecer estar offline. A mensagem será enviada assim que a conexão for restaurada.",
-        });
-    }
-
-    botReply("Uau, que delícia! 🔥 Adorei o que você mandou...");
-  };
-
-
-  return { messages: persistentMessages || [], isTyping, suggestions, sendMessage: handleUserMessage, sendMediaMessage, isSending: isSending || isTyping };
-}
+            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage
