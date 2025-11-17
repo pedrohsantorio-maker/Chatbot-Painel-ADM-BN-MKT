@@ -309,4 +309,60 @@ export function useChat() {
             await botMediaReply('link', 'https://t.me/Ster_SpicyyBOT', undefined, 2000);
             await botReply("Estou te esperando, vem me ver peladinha e fazer o que quiser comigo… 🤭", { newStage: 'end' });
         } else {
-            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage
+            botReply("Que pena, bebê... Achei que você queria. Se mudar de ideia, sabe onde me encontrar. 😉", { newStage: 'end' });
+        }
+        break;
+
+      default:
+        botReply("Não entendi, meu bem. Pode repetir?", { suggestions: ['Reiniciar'] });
+        break;
+    }
+  };
+
+  const sendMediaMessage = async (file: File, type: 'audio' | 'image' | 'video') => {
+    setIsSending(true);
+    let messageStub: Omit<Message, 'id' | 'timestamp'> = {
+        sender: 'user',
+        type,
+        mediaUrl: URL.createObjectURL(file), // Show local preview immediately
+        mediaMeta: {
+            fileName: file.name,
+            fileSize: formatFileSize(file.size),
+        }
+    };
+    
+    if (type === 'audio') {
+        formatAudioDuration(file, (duration) => {
+            messageStub.mediaMeta!.duration = duration;
+            // This is async, so the UI might update after the initial message add
+        });
+    }
+
+    addMessage(messageStub);
+
+    // TODO: Upload to Firebase Storage and update message with final URL
+    setTimeout(() => {
+        setIsSending(false);
+        botReply("Hmm, que delícia! Adorei o que você mandou...", {
+             suggestions: ['(Livre digitação)']
+        });
+        toast({
+            title: "Mídia Enviada!",
+            description: "Sua mídia foi enviada com sucesso.",
+        });
+    }, 2000)
+
+  };
+
+  const messages = persistentMessages ? persistentMessages.map(m => ({ ...m, id: m.id || String(Math.random()) })) : [];
+
+  return {
+    messages,
+    isTyping,
+    stage,
+    suggestions,
+    isSending,
+    sendMessage: handleUserMessage,
+    sendMediaMessage,
+  };
+}
